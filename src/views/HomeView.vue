@@ -51,14 +51,8 @@ const installApp = async () => {
       </section>
 
       <!-- 설치 가능할 때만 떠 있는 버튼 -->
-      <!--<button
-        v-if="canInstall"
-        @click="installApp"
-        class="install-button"
-      >
-        앱 설치하기
-      </button>-->
       <button
+        v-if="canInstall"
         @click="installApp"
         class="install-button"
       >
