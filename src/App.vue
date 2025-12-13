@@ -5,7 +5,7 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
   <div class="app">
     <header class="header">
-      <h1 class="logo"><RouterLink to="/" class="tab">MJTM 동문회</RouterLink></h1>
+      <h1 class="logo"><RouterLink to="/" class="tab">명지대학교 토목공학과 총동문회</RouterLink></h1>
     </header>
 
     <!--<nav class="tab-nav">
@@ -16,7 +16,7 @@ import { RouterLink, RouterView } from 'vue-router'
     -->
 
     <main class="main">
-      <RouterView />
+      <RouterView /> <!--HomeView.vue-->
     </main>
   </div>
 </template>

@@ -1,7 +1,19 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-</script>
+import { computed } from 'vue'
+import { canInstallPwa, deferredPromptEvent, setDeferredPrompt } from '@/pwaInstall'
 
+const canInstall = computed(() => canInstallPwa.value)
+
+const installApp = async () => {
+  if (!deferredPromptEvent) return
+
+  const result = await deferredPromptEvent.prompt()
+  // result.outcome: 'accepted' | 'dismissed'
+  console.log('PWA install outcome:', result.outcome) // 'accepted' | 'dismissed'
+  setDeferredPrompt(null)
+}
+</script>
 
 <template>
   <div class="page">
@@ -37,6 +49,21 @@ import { RouterLink } from 'vue-router'
           <p class="grid-text">연락처와 소속을 한눈에.</p>
         </div>
       </section>
+
+      <!-- 설치 가능할 때만 떠 있는 버튼 -->
+      <!--<button
+        v-if="canInstall"
+        @click="installApp"
+        class="install-button"
+      >
+        앱 설치하기
+      </button>-->
+      <button
+        @click="installApp"
+        class="install-button"
+      >
+        앱 설치하기
+      </button>
     </main>
   </div>
 </template>
@@ -114,4 +141,15 @@ import { RouterLink } from 'vue-router'
   text-decoration: underline;
 }
 
+.install-button {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+}
 </style>
