@@ -6,6 +6,9 @@ import { supabase } from '@/lib/supabaseClient'
 const router = useRouter()
 const isLoggedIn = ref(false)
 const displayName = ref('')
+const toastMessage = ref('')
+const toastVisible = ref(false)
+let toastTimer: number | null = null
 
 // members 테이블에서 프로필 불러오기
 const loadProfile = async (userId: string) => {
@@ -43,13 +46,24 @@ onMounted(async () => {
   })
 })
 
+const showToast = (message: string, duration = 2000) => {
+  toastMessage.value = message
+  toastVisible.value = true
+  if (toastTimer) {
+    window.clearTimeout(toastTimer)
+  }
+  toastTimer = window.setTimeout(() => {
+    toastVisible.value = false
+  }, duration)
+}
+
 const handleLogout = async () => {
   const { error } = await supabase.auth.signOut()
   if (error) {
     console.error(error)
     return
   }
-  alert('로그아웃되었습니다.')
+  showToast('로그아웃되었습니다.')
   router.push({ name: 'home' })
 }
 
@@ -96,6 +110,11 @@ const handleSignup = () => {
     <main class="main">
       <RouterView />
     </main>
+
+    <!-- 로그아웃 토스트 -->
+    <div v-if="toastVisible" class="toast">
+      {{ toastMessage }}
+    </div>
   </div>
 </template>
 
@@ -120,16 +139,16 @@ const handleSignup = () => {
   border-bottom: 1px solid #e5e7eb;
   background: #ffffff;
   display: flex;
-  align-items: flex-start;      /* 세로 방향 상단 정렬 */
-  justify-content: space-between; /* 왼쪽: 로고블록, 오른쪽: header-right */
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
 }
 
 /* 로고 + 타이틀 묶음 (로고 위, 타이틀 아래) */
 .logo-block {
   display: flex;
-  flex-direction: column;   /* 위: 로고, 아래: 타이틀 */
-  align-items: flex-start;  /* 왼쪽 정렬 */
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .logo {
@@ -142,7 +161,7 @@ const handleSignup = () => {
 
 /* 로고 왼쪽 하단 타이틀 */
 .header-title {
-  margin-top: 15px;  /* 기존 2px → 두 배로 증가 */
+  margin-top: 15px;
   font-size: 16px;
   font-weight: 700;
   color: #111827;
@@ -174,5 +193,18 @@ const handleSignup = () => {
 
 .main {
   padding: 0;
+}
+
+/* 토스트 */
+.toast {
+  position: fixed;
+  right: 16px;
+  bottom: 24px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.9);
+  color: #f9fafb;
+  font-size: 13px;
+  z-index: 1000;
 }
 </style>

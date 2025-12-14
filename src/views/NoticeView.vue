@@ -208,7 +208,7 @@ watch(page, () => {
   border-radius: 999px;
   border: 1px solid #cbd5e1;
   font-size: 13px;
-  min-width: 180px;
+  min-width: 80px;   /* 기존 180px → 절반 */
   outline: none;
 }
 
