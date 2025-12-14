@@ -15,6 +15,10 @@ const router = useRouter()
 const notices = ref<Notice[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
 
 // 검색 상태
 const searchQuery = ref('')
@@ -67,8 +71,9 @@ function handleSearch() {
 
 onMounted(fetchNotices)
 
-watch(page, () => {
-  fetchNotices()
+watch(page, async () => {
+  await fetchNotices()
+  scrollToTop()
 })
 </script>
 
