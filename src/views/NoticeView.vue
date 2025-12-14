@@ -185,7 +185,7 @@ watch(page, () => {
   margin-bottom: 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between; /* 왼쪽 제목, 오른쪽 검색 */
+  justify-content: space-between;
   gap: 12px;
 }
 
@@ -193,6 +193,7 @@ watch(page, () => {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
+  white-space: nowrap; /* 줄바꿈 방지 */
 }
 
 /* 검색 박스 */
@@ -200,6 +201,7 @@ watch(page, () => {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 1;   /* 필요하면 줄어들 수 있게 */
 }
 
 .search-input {
@@ -208,7 +210,7 @@ watch(page, () => {
   border-radius: 999px;
   border: 1px solid #cbd5e1;
   font-size: 13px;
-  min-width: 80px;   /* 기존 180px → 절반 */
+  min-width: 120px; /* 기존보다 살짝 줄여서 여유 확보 */
   outline: none;
 }
 
