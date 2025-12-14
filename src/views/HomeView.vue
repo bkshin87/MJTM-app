@@ -57,16 +57,16 @@ const menus = [
 <template>
   <div class="app">
     <!-- Header -->
-    <header class="header">
+    <!--<header class="header">
       <div class="header-left">
 
       </div>
 
-  <div class="header-right header-right--only">
-    <span class="user-name">홍길동 님</span>
-    <button class="btn ghost">로그아웃</button>
-  </div>
-    </header>
+      <div class="header-right header-right--only">
+        <span class="user-name">홍길동 님</span>
+        <button class="btn ghost">로그아웃</button>
+      </div>
+    </header>-->
 
     <!-- Main -->
     <main class="container">
