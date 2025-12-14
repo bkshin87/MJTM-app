@@ -7,6 +7,9 @@ import EventView from '../views/EventView.vue'      // 경조사
 import AlbumView from '../views/AlbumView.vue'      // 사진첩
 import MemberView from '../views/MemberView.vue'    // 동문명부
 
+import SignUpView from '../views/SignUpView.vue'
+import LoginView from '../views/LoginView.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -40,12 +43,22 @@ const router = createRouter({
       name: 'members',
       component: MemberView,
     },
+    {
+      path: '/signup',
+      name: 'signup',
+      component: SignUpView,
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView },
   ],
-    scrollBehavior(to, from, savedPosition) {
+    //scrollBehavior(to, from, savedPosition) {
+    scrollBehavior() {
     // 브라우저 뒤로가기 등은 기존 위치 유지, 그 외에는 top: 0
-    if (savedPosition) {
-      return savedPosition
-    }
+    //if (savedPosition) {
+    //  return savedPosition
+    //}
     return { top: 0 }
   },
 })
