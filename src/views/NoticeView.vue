@@ -210,7 +210,7 @@ watch(page, () => {
   border-radius: 999px;
   border: 1px solid #cbd5e1;
   font-size: 13px;
-  min-width: 120px; /* 기존보다 살짝 줄여서 여유 확보 */
+  min-width: 80px; /* 기존보다 살짝 줄여서 여유 확보 */
   outline: none;
 }
 
