@@ -3,6 +3,10 @@ import HomeView from '../views/HomeView.vue'
 import NoticeView from '../views/NoticeView.vue'
 import NoticeDetailView from '../views/NoticeDetailView.vue'
 
+import EventView from '../views/EventView.vue'      // 경조사
+import AlbumView from '../views/AlbumView.vue'      // 사진첩
+import MemberView from '../views/MemberView.vue'    // 동문명부
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -21,7 +25,29 @@ const router = createRouter({
       name: 'notice-detail',
       component: NoticeDetailView,
     },
+    {
+      path: '/event',
+      name: 'event',
+      component: EventView,
+    },
+    {
+      path: '/album',
+      name: 'album',
+      component: AlbumView,
+    },
+    {
+      path: '/members',
+      name: 'members',
+      component: MemberView,
+    },
   ],
+    scrollBehavior(to, from, savedPosition) {
+    // 브라우저 뒤로가기 등은 기존 위치 유지, 그 외에는 top: 0
+    if (savedPosition) {
+      return savedPosition
+    }
+    return { top: 0 }
+  },
 })
 
 export default router

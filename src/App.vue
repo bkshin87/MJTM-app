@@ -5,7 +5,16 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
   <div class="app">
     <header class="header">
-      <h1 class="logo"><RouterLink to="/" class="tab">명지대학교 토목공학과 총동문회</RouterLink></h1>
+      <h1 class="logo"><RouterLink to="/" class="tab"><img
+          src="/images/home-logo.png"
+          alt="홈"
+          class="section-title-image"
+        /></RouterLink></h1>
+      <!--<img
+          src="/images/home-logo.png"
+          alt="홈"
+          class="section-title-image"
+        />-->
     </header>
 
     <!--<nav class="tab-nav">
@@ -24,15 +33,15 @@ import { RouterLink, RouterView } from 'vue-router'
 <style scoped>
 .app {
   min-height: 100vh;
-  background: #1f1f1f;
+  background: #ffffff;
   color: #f5f5f5;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .header {
   padding: 10px 16px 4px;
-  background: #262626;
-  border-bottom: 1px solid #333;
+  background: #ffffff;
+  border-bottom: 0px solid #333;
 }
 
 .logo {
