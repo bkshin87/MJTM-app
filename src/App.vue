@@ -3,12 +3,14 @@ import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { onMounted, ref } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
 
+
 const router = useRouter()
 const isLoggedIn = ref(false)
 const displayName = ref('')
 const toastMessage = ref('')
 const toastVisible = ref(false)
 let toastTimer: number | null = null
+
 
 // members 테이블에서 프로필 불러오기
 const loadProfile = async (userId: string) => {
@@ -18,31 +20,30 @@ const loadProfile = async (userId: string) => {
     .eq('id', userId)
     .maybeSingle()
 
+
   if (error) {
     console.error('loadProfile error:', error)
     displayName.value = ''
     return
   }
 
+
   displayName.value = data?.name || ''
 }
 
-onMounted(async () => {
-  const { data, error } = await supabase.auth.getSession()
-  if (error) {
-    console.error('getSession error:', error)
-  }
-  console.log('초기 세션:', data.session)
 
+onMounted(async () => {
+  const { data } = await supabase.auth.getSession()
   const session = data.session
   isLoggedIn.value = !!session
+
 
   if (session?.user) {
     await loadProfile(session.user.id)
   }
 
-  supabase.auth.onAuthStateChange((event, session) => {
-    console.log('auth event:', event, session)
+
+  supabase.auth.onAuthStateChange((_event, session) => {
     isLoggedIn.value = !!session
     if (session?.user) {
       loadProfile(session.user.id)
@@ -51,6 +52,7 @@ onMounted(async () => {
     }
   })
 })
+
 
 const showToast = (message: string, duration = 2000) => {
   toastMessage.value = message
@@ -63,27 +65,28 @@ const showToast = (message: string, duration = 2000) => {
   }, duration)
 }
 
+
 const handleLogout = async () => {
   const { error } = await supabase.auth.signOut()
-
   if (error) {
-    console.error('signOut error:', error)
-    showToast('로그아웃 중 오류가 발생했습니다.')
+    console.error(error)
     return
   }
-
   showToast('로그아웃되었습니다.')
   router.push({ name: 'home' })
 }
+
 
 const handleLogin = () => {
   router.push({ name: 'login' })
 }
 
+
 const handleSignup = () => {
   router.push({ name: 'signup' })
 }
 </script>
+
 
 <template>
   <div class="app">
@@ -102,12 +105,14 @@ const handleSignup = () => {
         <span class="header-title">토목공학과 총동문회</span>
       </div>
 
+
       <!-- 오른쪽: 로그인/로그아웃/회원가입/이름 -->
       <div class="header-right header-right--only">
         <template v-if="!isLoggedIn">
           <button class="btn ghost" @click="handleLogin">로그인</button>
           <button class="btn ghost" @click="handleSignup">회원가입</button>
         </template>
+
 
         <template v-else>
           <span class="user-name">{{ displayName || '회원' }} 님</span>
@@ -116,9 +121,11 @@ const handleSignup = () => {
       </div>
     </header>
 
+
     <main class="main">
       <RouterView />
     </main>
+
 
     <!-- 로그아웃 토스트 -->
     <div v-if="toastVisible" class="toast">
@@ -126,6 +133,7 @@ const handleSignup = () => {
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .app {
@@ -135,12 +143,14 @@ const handleSignup = () => {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+
 /* 로고 80% 크기 */
 .section-title-image {
   display: block;
   max-height: 32px; /* 기존 40px → 약 80% */
   width: auto;
 }
+
 
 /* 헤더: 좌측(로고+타이틀), 우측(로그인 영역) */
 .header {
@@ -153,6 +163,7 @@ const handleSignup = () => {
   gap: 16px;
 }
 
+
 /* 로고 + 타이틀 묶음 (로고 위, 타이틀 아래) */
 .logo-block {
   display: flex;
@@ -160,13 +171,16 @@ const handleSignup = () => {
   align-items: flex-start;
 }
 
+
 .logo {
   margin: 0;
 }
 
+
 .logo-link {
   text-decoration: none;
 }
+
 
 /* 로고 왼쪽 하단 타이틀 */
 .header-title {
@@ -176,6 +190,7 @@ const handleSignup = () => {
   color: #111827;
 }
 
+
 /* 오른쪽 영역 */
 .header-right {
   display: flex;
@@ -183,10 +198,12 @@ const handleSignup = () => {
   gap: 10px;
 }
 
+
 .user-name {
   font-size: 14px;
   color: #4b5563;
 }
+
 
 /* 버튼 스타일 */
 .btn.ghost {
@@ -200,9 +217,11 @@ const handleSignup = () => {
   cursor: pointer;
 }
 
+
 .main {
   padding: 0;
 }
+
 
 /* 토스트 */
 .toast {
