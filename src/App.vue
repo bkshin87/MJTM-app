@@ -28,7 +28,12 @@ const loadProfile = async (userId: string) => {
 }
 
 onMounted(async () => {
-  const { data } = await supabase.auth.getSession()
+  const { data, error } = await supabase.auth.getSession()
+  if (error) {
+    console.error('getSession error:', error)
+  }
+  console.log('초기 세션:', data.session)
+
   const session = data.session
   isLoggedIn.value = !!session
 
@@ -36,7 +41,8 @@ onMounted(async () => {
     await loadProfile(session.user.id)
   }
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('auth event:', event, session)
     isLoggedIn.value = !!session
     if (session?.user) {
       loadProfile(session.user.id)
@@ -59,10 +65,13 @@ const showToast = (message: string, duration = 2000) => {
 
 const handleLogout = async () => {
   const { error } = await supabase.auth.signOut()
+
   if (error) {
-    console.error(error)
+    console.error('signOut error:', error)
+    showToast('로그아웃 중 오류가 발생했습니다.')
     return
   }
+
   showToast('로그아웃되었습니다.')
   router.push({ name: 'home' })
 }
