@@ -45,7 +45,7 @@ const goToLatestNotice = () => {
   router.push({ name: 'notice-detail', params: { id: latestNotice.value.id } })
 }
 
-// 홈 화면 메뉴 (아이콘/텍스트는 그대로 사용)
+// 홈 화면 메뉴
 const menus = [
   { title: '공지사항', icon: '📄', desc: '동문회 공식 소식', route: '/notice' },
   { title: '경조사', icon: '🎉', desc: '기쁜 일과 슬픈 일', route: '/event' },
@@ -56,19 +56,6 @@ const menus = [
 
 <template>
   <div class="app">
-    <!-- Header -->
-    <!--<header class="header">
-      <div class="header-left">
-
-      </div>
-
-      <div class="header-right header-right--only">
-        <span class="user-name">홍길동 님</span>
-        <button class="btn ghost">로그아웃</button>
-      </div>
-    </header>-->
-
-    <!-- Main -->
     <main class="container">
       <!-- Hero Notice (최근 공지) -->
       <section
@@ -80,7 +67,20 @@ const menus = [
           <h2>동문회 주요 공지</h2>
           <p>{{ latestNotice.title }}</p>
         </div>
-        <button class="btn primary">자세히 보기</button>
+
+        <div class="hero-meta">
+          <!-- 필요하면 날짜 노출 -->
+          <!-- <p class="hero-date">
+            {{ new Date(latestNotice.created_at).toLocaleDateString() }}
+          </p> -->
+          <button
+            class="hero-more-button"
+            type="button"
+            @click.stop="goToLatestNotice"
+          >
+            자세히 보기
+          </button>
+        </div>
       </section>
 
       <!-- 최근 공지가 없을 때 기본 문구 -->
@@ -102,7 +102,7 @@ const menus = [
           <div class="menu-card">
             <div class="icon">{{ menu.icon }}</div>
             <div class="title">{{ menu.title }}</div>
-            <!--<div class="desc">{{ menu.desc }}</div>-->
+            <!-- <div class="desc">{{ menu.desc }}</div> -->
           </div>
         </RouterLink>
       </section>
@@ -127,65 +127,10 @@ const menus = [
 
 .app {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f5f7fb, #eef1f7);
+  background: #ffffff; /* App.vue와 동일한 흰색 배경 */
   color: #222;
   font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
-  padding-bottom: 10px; /* 하단 여백 추가 */
-}
-
-/* Header */
-.header {
-  height: 64px;
-  padding: 0 28px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end; /* 오른쪽 정렬 */
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #e6e9f0;
-}
-
-
-.logo {
-  height: 36px;
-}
-
-.site-title {
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.user-name {
-  font-size: 14px;
-  color: #555;
-}
-
-/* Buttons */
-.btn {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.btn.primary {
-  background: linear-gradient(135deg, #4f7cff, #2f5bff);
-  color: #fff;
-  border: none;
-}
-
-.btn.ghost {
-  background: transparent;
-  border: 1px solid #ccd3e0;
-  color: #444;
+  padding-bottom: 10px;
 }
 
 /* Container */
@@ -197,25 +142,79 @@ const menus = [
 
 /* Hero Notice */
 .hero-notice {
-  background: linear-gradient(135deg, #2f5bff, #6a8bff);
-  color: #fff;
+  background: #ffffff;
   border-radius: 18px;
-  padding: 28px 32px;
+  padding: 24px 28px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 16px 40px rgba(47, 91, 255, 0.25);
+  flex-direction: column; /* 위: 텍스트, 아래: 버튼 */
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
   cursor: pointer;
+  border: 1px solid #e5e7eb;
+}
+
+/* 텍스트를 은은하게 */
+.hero-text {
+  margin-bottom: 8px;
 }
 
 .hero-text h2 {
-  font-size: 20px;
-  margin-bottom: 6px;
+  font-size: 18px;
+  margin-bottom: 4px;
+  color: #111827;
 }
 
 .hero-text p {
   font-size: 14px;
-  opacity: 0.9;
+  color: #4b5563;
+}
+
+/* 아래쪽: 버튼을 오른쪽 하단으로 */
+.hero-meta {
+  margin-top: auto;              /* 위 내용을 위로 밀고, 이 블럭을 하단에 붙임 */
+  display: flex;
+  justify-content: flex-end;     /* 오른쪽 정렬 */
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-date {
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* 자세히 보기 버튼: 작고 은은하게 */
+.hero-more-button {
+  padding: 3px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid #cbd5f5;
+  background: #e5edff;
+  color: #1d4ed8;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 공통 버튼 (기존) */
+.btn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #b0c1f7, #d8def3);
+  color: #fff;
+  border: none;
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid #ccd3e0;
+  color: #444;
 }
 
 /* Menu */
@@ -223,7 +222,7 @@ const menus = [
   margin-top: 36px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  gap: 10px;
 }
 
 .menu-card-link {
@@ -232,36 +231,36 @@ const menus = [
 }
 
 .menu-card {
-  background: #fff;
-  border-radius: 18px;
-  padding: 18px 16px;          /* 기존 26px 22px → 줄임 */
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.05);
-  transition: all 0.25s ease;
-  cursor: pointer;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
 }
 
 .menu-card:hover {
-  transform: translateY(-4px); /* 살짝만 띄우기 */
+  transform: translateY(-4px);
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
 }
 
 .menu-card .icon {
-  font-size: 28px;             /* 기존 34px → 줄임 */
+  font-size: 28px;
   margin-bottom: 10px;
 }
 
 .menu-card .title {
-  font-size: 14px;             /* 기존 16px → 줄임 */
+  font-size: 14px;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .menu-card .desc {
-  font-size: 12px;             /* 기존 13px → 줄임 */
+  font-size: 12px;
   color: #666;
 }
 
-/* PWA 설치 버튼 (기존 스타일 유지 가능) */
+/* PWA 설치 버튼 */
 .install-button {
   position: fixed;
   right: 16px;
@@ -277,9 +276,7 @@ const menus = [
 /* Responsive */
 @media (max-width: 768px) {
   .hero-notice {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
+    padding: 20px 18px;
   }
 }
 </style>

@@ -5,10 +5,17 @@ import { supabase } from '@/lib/supabaseClient'
 
 const router = useRouter()
 
+// Auth용
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 
+// members 테이블용
+const name = ref('')
+const entranceYear = ref<number | null>(null)
+const phone = ref('')
+
+// UI 상태
 const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -17,8 +24,8 @@ const handleSignUp = async () => {
   errorMessage.value = ''
   successMessage.value = ''
 
-  if (!email.value || !password.value) {
-    errorMessage.value = '이메일과 비밀번호를 입력해 주세요.'
+  if (!email.value || !password.value || !name.value) {
+    errorMessage.value = '이메일, 비밀번호, 이름을 모두 입력해 주세요.'
     return
   }
   if (password.value !== confirmPassword.value) {
@@ -28,27 +35,55 @@ const handleSignUp = async () => {
 
   loading.value = true
 
-  // const { data, error } = await supabase.auth.signUp({
-  const { error } = await supabase.auth.signUp({
+  // 1) Supabase Auth 회원 생성
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
-    // 필요하면 메타데이터 추가 가능
-    // options: { data: { name: '홍길동' } }
-  }) // 이메일/비밀번호 회원가입 예시[web:711][web:710]
+  }) // 이메일/비밀번호 회원가입[web:711]
 
-  loading.value = false
-
-  if (error) {
-    console.error(error)
-    errorMessage.value = error.message || '회원가입 중 오류가 발생했습니다.'
+  if (signUpError) {
+    loading.value = false
+    console.error(signUpError)
+    errorMessage.value = signUpError.message || '회원가입 중 오류가 발생했습니다.'
     return
   }
 
-  successMessage.value = '회원가입이 완료되었습니다. 이메일을 확인해 주세요.'
-  // 원하면 자동으로 로그인 페이지로 이동:
+  const user = signUpData.user
+  if (!user) {
+    loading.value = false
+    errorMessage.value = '회원 정보 생성에 실패했습니다.'
+    return
+  }
+
+  // 2) members 테이블에 동문 정보 저장
+  const { error: profileError } = await supabase
+    .from('members')
+    .insert({
+      id: user.id,                    // auth.users.id와 1:1 매칭
+      name: name.value,
+      entrance_year: entranceYear.value,
+      phone: phone.value,
+    })
+
+  loading.value = false
+
+  if (profileError) {
+    console.error(profileError)
+    errorMessage.value =
+      '회원 프로필 저장 중 오류가 발생했습니다. 관리자에게 문의해 주세요.'
+    return
+  }
+
+  successMessage.value = '회원가입이 완료되었습니다.'
+  alert(
+    '회원가입이 완료되었습니다.\n이메일로 전송된 인증 메일을 확인하고, 링크를 눌러 가입을 완료해 주세요.'
+  )
+
+  // 원하면 로그인 페이지로 이동
   router.push({ name: 'login' })
 }
 </script>
+
 
 <template>
   <div class="page">
@@ -57,9 +92,41 @@ const handleSignUp = async () => {
         <h2 class="title">회원가입</h2>
 
         <form class="form" @submit.prevent="handleSignUp">
+          <!-- members 정보 -->
+          <label class="field">
+            <span class="label">이름</span>
+            <input v-model="name" type="text" class="input" />
+          </label>
+
+          <label class="field">
+            <span class="label">입학년도</span>
+            <input
+              v-model.number="entranceYear"
+              type="number"
+              class="input"
+              placeholder="예: 2005"
+            />
+          </label>
+
+          <label class="field">
+            <span class="label">전화번호</span>
+            <input
+              v-model="phone"
+              type="text"
+              class="input"
+              placeholder="010-0000-0000"
+            />
+          </label>
+
+          <!-- Auth 정보 -->
           <label class="field">
             <span class="label">이메일</span>
-            <input v-model="email" type="email" class="input" placeholder="you@example.com" />
+            <input
+              v-model="email"
+              type="email"
+              class="input"
+              placeholder="you@example.com"
+            />
           </label>
 
           <label class="field">
@@ -83,6 +150,7 @@ const handleSignUp = async () => {
     </main>
   </div>
 </template>
+
 
 <style scoped>
 .page {
@@ -169,3 +237,4 @@ const handleSignUp = async () => {
   cursor: default;
 }
 </style>
+

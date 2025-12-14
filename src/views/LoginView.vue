@@ -34,6 +34,7 @@ const handleLogin = async () => {
     return
   }
 
+  alert('환영합니다.')
   // 로그인 성공 시 홈으로 이동 (또는 원하는 페이지)
   router.push({ name: 'home' })
 }

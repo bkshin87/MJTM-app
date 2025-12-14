@@ -5,25 +5,55 @@ import { supabase } from '@/lib/supabaseClient'
 
 const router = useRouter()
 const isLoggedIn = ref(false)
+const displayName = ref('')
+
+// members 테이블에서 프로필 불러오기
+const loadProfile = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('members')
+    .select('name')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('loadProfile error:', error)
+    displayName.value = ''
+    return
+  }
+
+  displayName.value = data?.name || ''
+}
 
 onMounted(async () => {
   const { data } = await supabase.auth.getSession()
-  isLoggedIn.value = !!data.session
+  const session = data.session
+  isLoggedIn.value = !!session
+
+  if (session?.user) {
+    await loadProfile(session.user.id)
+  }
 
   supabase.auth.onAuthStateChange((_event, session) => {
     isLoggedIn.value = !!session
+    if (session?.user) {
+      loadProfile(session.user.id)
+    } else {
+      displayName.value = ''
+    }
   })
 })
 
 const handleLogout = async () => {
-  await supabase.auth.signOut()
-  isLoggedIn.value = false
-  // 로그아웃 후 홈으로 이동 (원하면)
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    console.error(error)
+    return
+  }
+  alert('로그아웃되었습니다.')
   router.push({ name: 'home' })
 }
 
 const handleLogin = () => {
-  // 로그인 페이지 라우트 만들어 두었다는 가정 (예: /login)
   router.push({ name: 'login' })
 }
 
@@ -35,45 +65,33 @@ const handleSignup = () => {
 <template>
   <div class="app">
     <header class="header">
-      <!-- 1줄차: 로고 -->
-      <h1 class="logo">
-        <RouterLink to="/" class="tab">
-          <img
-            src="/images/home-logo.png"
-            alt="홈"
-            class="section-title-image"
-          />
-        </RouterLink>
-      </h1>
+      <!-- 왼쪽: 로고 + 바로 아래 타이틀 -->
+      <div class="logo-block">
+        <h1 class="logo">
+          <RouterLink to="/" class="logo-link">
+            <img
+              src="/images/home-logo.png"
+              alt="홈"
+              class="section-title-image"
+            />
+          </RouterLink>
+        </h1>
+        <span class="header-title">토목공학과 총동문회</span>
+      </div>
 
-      <!-- 2줄차: 좌측 타이틀 + 우측 사용자 영역 -->
-      <div class="header-bottom">
-        <div class="header-left">
-          <span class="header-title">토목공학과 총동문회</span>
-        </div>
+      <!-- 오른쪽: 로그인/로그아웃/회원가입/이름 -->
+      <div class="header-right header-right--only">
+        <template v-if="!isLoggedIn">
+          <button class="btn ghost" @click="handleLogin">로그인</button>
+          <button class="btn ghost" @click="handleSignup">회원가입</button>
+        </template>
 
-        <div class="header-right header-right--only">
-          <!-- 로그인 안 한 경우: 로그인 / 회원가입 -->
-          <template v-if="!isLoggedIn">
-            <button class="btn ghost" @click="handleLogin">로그인</button>
-            <button class="btn ghost" @click="handleSignup">회원가입</button>
-          </template>
-
-          <!-- 로그인 한 경우: 이름 + 로그아웃 -->
-          <template v-else>
-            <span class="user-name">홍길동 님</span>
-            <button class="btn ghost" @click="handleLogout">로그아웃</button>
-          </template>
-        </div>
+        <template v-else>
+          <span class="user-name">{{ displayName || '회원' }} 님</span>
+          <button class="btn ghost" @click="handleLogout">로그아웃</button>
+        </template>
       </div>
     </header>
-
-    <!-- 필요 시 탭 네비는 추후 활성화
-    <nav class="tab-nav">
-      <RouterLink to="/" class="tab" active-class="active-tab">홈</RouterLink>
-      <RouterLink to="/notice" class="tab" active-class="active-tab">공지사항</RouterLink>
-    </nav>
-    -->
 
     <main class="main">
       <RouterView />
@@ -85,43 +103,52 @@ const handleSignup = () => {
 .app {
   min-height: 100vh;
   background: #ffffff;
-  color: #f5f5f5;
+  color: #ffffff;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+/* 로고 80% 크기 */
 .section-title-image {
   display: block;
-  max-height: 40px;
+  max-height: 32px; /* 기존 40px → 약 80% */
   width: auto;
 }
 
+/* 헤더: 좌측(로고+타이틀), 우측(로그인 영역) */
 .header {
-  padding: 10px 20px;
+  padding: 8px 20px 10px;
   border-bottom: 1px solid #e5e7eb;
   background: #ffffff;
   display: flex;
-  flex-direction: column;   /* 위: 로고 / 아래: 타이틀+유저 */
-  gap: 8px;                 /* 두 줄 사이 간격 */
+  align-items: flex-start;      /* 세로 방향 상단 정렬 */
+  justify-content: space-between; /* 왼쪽: 로고블록, 오른쪽: header-right */
+  gap: 16px;
 }
 
-/* 두 번째 줄: 좌우 배치 */
-.header-bottom {
+/* 로고 + 타이틀 묶음 (로고 위, 타이틀 아래) */
+.logo-block {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;   /* 위: 로고, 아래: 타이틀 */
+  align-items: flex-start;  /* 왼쪽 정렬 */
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
+.logo {
+  margin: 0;
 }
 
+.logo-link {
+  text-decoration: none;
+}
+
+/* 로고 왼쪽 하단 타이틀 */
 .header-title {
-  font-size: 18px;
+  margin-top: 15px;  /* 기존 2px → 두 배로 증가 */
+  font-size: 16px;
   font-weight: 700;
   color: #111827;
 }
 
+/* 오른쪽 영역 */
 .header-right {
   display: flex;
   align-items: center;
@@ -136,47 +163,13 @@ const handleSignup = () => {
 /* 버튼 스타일 */
 .btn.ghost {
   padding: 4px 12px;
-  border-radius: 999px;       /* 둥근 모서리 */
+  border-radius: 999px;
   border: 1px solid #cbd5f5;
   background: #e5edff;
   color: #1d4ed8;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-}
-
-/* 로고 한 줄 */
-.logo {
-  margin: 0;                  /* 개별 margin 대신 header의 gap 사용 */
-}
-
-.tab-nav {
-  display: flex;
-  background: #262626;
-  padding: 8px 12px 10px;
-  gap: 8px;
-  border-bottom: 1px solid #333;
-}
-
-.tab {
-  flex: 1;
-  text-align: center;
-  padding: 6px 0;
-  border-radius: 999px;
-  font-size: 13px;
-  color: #cccccc;
-  text-decoration: none;
-}
-
-.active-tab {
-  background: #3a3a3a;
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.logo-link {
-  color: #f5f5f5;
-  text-decoration: none;
 }
 
 .main {
