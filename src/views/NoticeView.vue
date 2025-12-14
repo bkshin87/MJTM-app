@@ -185,15 +185,18 @@ watch(page, () => {
   margin-bottom: 16px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* 양쪽 끝 정렬 대신, 제목은 고정, search-box가 나머지 채우도록 */
+  /* justify-content: space-between;  <= 제거 */
   gap: 12px;
 }
 
+/* 제목: 고정 폭 */
 .section-title {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
   white-space: nowrap; /* 줄바꿈 방지 */
+  flex: 0 0 auto;      /* 내용만큼만, 고정 */
 }
 
 /* 검색 박스 */
@@ -201,7 +204,8 @@ watch(page, () => {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-shrink: 1;   /* 필요하면 줄어들 수 있게 */
+  flex: 1 1 auto;      /* 남은 공간 채우고, 브라우저 줄면 같이 줄어듦 */
+  min-width: 0;        /* flex 아이템이 제대로 줄어들 수 있게 */
 }
 
 .search-input {
@@ -210,7 +214,8 @@ watch(page, () => {
   border-radius: 999px;
   border: 1px solid #cbd5e1;
   font-size: 13px;
-  min-width: 80px; /* 기존보다 살짝 줄여서 여유 확보 */
+  min-width: 80px;
+  width: 100%;         /* search-box 안에서 가로 공간을 채우도록 */
   outline: none;
 }
 
