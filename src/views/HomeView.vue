@@ -1,282 +1,285 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router'
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { canInstallPwa, deferredPromptEvent, setDeferredPrompt } from '@/pwaInstall'
+import { RouterLink, useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
 
 const router = useRouter()
-const canInstall = computed(() => canInstallPwa.value)
 
 type Notice = {
   id: number
   title: string
-  content: string
   created_at: string
 }
 
-const latestNotice = ref<Notice | null>(null)
-
-const installApp = async () => {
-  if (!deferredPromptEvent) return
-
-  const result = await deferredPromptEvent.prompt()
-  console.log('PWA install outcome:', result.outcome)
-  setDeferredPrompt(null)
-}
+const notices = ref<Notice[]>([])
+const loading = ref(true)
 
 onMounted(async () => {
   const { data, error } = await supabase
     .from('notice')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(1)
+    .select('id, title, created_at')
+    .order('created_at', { ascending: false }) // 최신순
+    .limit(4)                                  // 최근 4건만
 
   if (error) {
-    console.error('supabase error:', error)
-    return
+    console.error('notice fetch error:', error)
+    notices.value = []
+  } else {
+    notices.value = (data ?? []) as Notice[]
   }
 
-  latestNotice.value = (data && data.length > 0 ? data[0] : null) as Notice | null
+  loading.value = false
 })
 
-const goToLatestNotice = () => {
-  if (!latestNotice.value) return
-  router.push({ name: 'notice-detail', params: { id: latestNotice.value.id } })
+const goToNoticeDetail = (id: number) => {
+  router.push({ name: 'notice-detail', params: { id } })
 }
-
-// 홈 화면 메뉴
-const menus = [
-  { title: '공지사항', icon: '📄', desc: '동문회 공식 소식', route: '/notice' },
-  { title: '경조사', icon: '🎉', desc: '기쁜 일과 슬픈 일', route: '/event' },
-  { title: '사진첩', icon: '📷', desc: '행사 및 추억 공유', route: '/album' },
-  { title: '동문명부', icon: '👥', desc: '동문 정보 검색', route: '/members' },
-]
 </script>
 
 <template>
-  <div class="app">
-    <main class="container">
-      <!-- Hero Notice (최근 공지) -->
-      <section
-        v-if="latestNotice"
-        class="hero-notice"
-        @click="goToLatestNotice"
-      >
-        <div class="hero-text">
-          <h2>동문회 주요 공지</h2>
-          <p>{{ latestNotice.title }}</p>
-        </div>
+  <div class="page">
+    <main class="content">
+      <!-- 네비 탭 -->
+      <nav class="tabs">
+        <RouterLink to="/about" class="tab">동문회소개</RouterLink>
+        <RouterLink to="/notice" class="tab">공지사항</RouterLink>
+        <RouterLink to="/members" class="tab">동문명부</RouterLink>
+        <RouterLink to="/album" class="tab">사진첩</RouterLink>
+        <RouterLink to="/event" class="tab">경조사</RouterLink>
+      </nav>
 
-        <div class="hero-meta">
-          <!-- 필요하면 날짜 노출 -->
-          <!-- <p class="hero-date">
-            {{ new Date(latestNotice.created_at).toLocaleDateString() }}
-          </p> -->
+      <!-- 상단 큰 배너 -->
+      <section class="hero">
+        <div class="hero-image">
+          <img src="/images/main.png" alt="배너 이미지" />
+          <div class="hero-text-slot">
+            자랑스러운 명지 토목인의 공간
+          </div>
+        </div>
+      </section>
+
+      <!-- 공지사항 영역 -->
+      <section class="notice-section">
+        <div class="notice-header">
+          <h2 class="notice-heading">공지사항</h2>
           <button
-            class="hero-more-button"
             type="button"
-            @click.stop="goToLatestNotice"
+            class="notice-add-btn"
+            @click="router.push('/notice')"
           >
-            자세히 보기
+            +
           </button>
         </div>
+
+        <ul class="notice-list">
+          <li v-if="loading" class="notice-empty">
+            불러오는 중입니다...
+          </li>
+
+          <li
+            v-else
+            v-for="n in notices"
+            :key="n.id"
+            class="notice-row"
+            @click="goToNoticeDetail(n.id)"
+          >
+            <span class="notice-row-title">{{ n.title }}</span>
+            <span class="notice-row-date">
+              {{ new Date(n.created_at).toLocaleDateString('ko-KR') }}
+            </span>
+          </li>
+
+          <li v-if="!loading && notices.length === 0" class="notice-empty">
+            등록된 공지가 없습니다.
+          </li>
+        </ul>
       </section>
 
-      <!-- 최근 공지가 없을 때 기본 문구 -->
-      <section v-else class="hero-notice">
-        <div class="hero-text">
-          <h2>동문회 주요 공지</h2>
-          <p>등록된 공지가 없습니다.</p>
-        </div>
-      </section>
-
-      <!-- Menu Cards -->
-      <section class="menu-section">
-        <RouterLink
-          v-for="menu in menus"
-          :key="menu.title"
-          :to="menu.route"
-          class="menu-card-link"
+      <!-- 구인/구직 박스는 필요 시 주석 해제해서 사용 -->
+      <!--
+      <section class="recruit-section">
+        <a
+          href="https://www.naver.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="recruit-card recruit-link"
         >
-          <div class="menu-card">
-            <div class="icon">{{ menu.icon }}</div>
-            <div class="title">{{ menu.title }}</div>
-            <!-- <div class="desc">{{ menu.desc }}</div> -->
+          <div class="recruit-slot">
+            구인/구직
           </div>
-        </RouterLink>
+        </a>
       </section>
+      -->
     </main>
-
-    <!-- PWA 설치 버튼 -->
-    <button
-      v-if="canInstall"
-      @click="installApp"
-      class="install-button"
-    >
-      앱 설치하기
-    </button>
   </div>
 </template>
 
 <style scoped>
-/* Reset */
-* {
-  box-sizing: border-box;
-}
-
-.app {
+.page {
   min-height: 100vh;
-  background: #ffffff; /* App.vue와 동일한 흰색 배경 */
-  color: #222;
+  background-color: #ffffff;
   font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
-  padding-bottom: 10px;
-}
-
-/* Container */
-.container {
-  max-width: 1200px;
-  margin: 32px auto;
-  padding: 0 20px;
-}
-
-/* Hero Notice */
-.hero-notice {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 24px 28px;
-  display: flex;
-  flex-direction: column; /* 위: 텍스트, 아래: 버튼 */
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
-  cursor: pointer;
-  border: 1px solid #e5e7eb;
-}
-
-/* 텍스트를 은은하게 */
-.hero-text {
-  margin-bottom: 8px;
-}
-
-.hero-text h2 {
-  font-size: 18px;
-  margin-bottom: 4px;
   color: #111827;
 }
 
-.hero-text p {
-  font-size: 14px;
-  color: #4b5563;
+/* 메인 컨텐츠 래퍼 (흰 카드 느낌) */
+.content {
+  max-width: 980px;
+  margin: 0 auto 40px;
+  padding: 0 20px 32px;
+  background-color: #ffffff;
 }
 
-/* 아래쪽: 버튼을 오른쪽 하단으로 */
-.hero-meta {
-  margin-top: auto;              /* 위 내용을 위로 밀고, 이 블럭을 하단에 붙임 */
+/* 탭 메뉴 */
+.tabs {
   display: flex;
-  justify-content: flex-end;     /* 오른쪽 정렬 */
-  align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 28px;
+  padding-top: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.hero-date {
-  margin: 0;
-  font-size: 12px;
-  color: #9ca3af;
+.tab {
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  color: #111827;
+  padding-bottom: 7px;
 }
 
-/* 자세히 보기 버튼: 작고 은은하게 */
-.hero-more-button {
-  padding: 3px 10px;
-  font-size: 12px;
-  border-radius: 999px;
-  border: 1px solid #cbd5f5;
-  background: #e5edff;
-  color: #1d4ed8;
-  cursor: pointer;
+.tab.router-link-active {
+  color: #0b3b7a;
+  border-bottom: 3px solid #0b3b7a;
+}
+
+/* 메인 배너 */
+.hero {
+  margin-top: 18px;
+  margin-bottom: 24px;
+}
+
+.hero-image {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.hero-image img {
+  display: block;
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+}
+
+/* 배너 중앙 텍스트 */
+.hero-text-slot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
   white-space: nowrap;
 }
 
-/* 공통 버튼 (기존) */
-.btn {
-  height: 36px;
-  padding: 0 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+/* 공지사항 */
+.notice-section {
+  margin-top: 4px;
+}
+
+.notice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.notice-heading {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.notice-add-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  background-color: #ffffff;
+  color: #6b7280;
+  font-size: 22px;
+  line-height: 1;
+  padding: 0;
   cursor: pointer;
 }
 
-.btn.primary {
-  background: linear-gradient(135deg, #b0c1f7, #d8def3);
-  color: #fff;
-  border: none;
+.notice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #e5e7eb;
 }
 
-.btn.ghost {
-  background: transparent;
-  border: 1px solid #ccd3e0;
-  color: #444;
+.notice-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 4px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
 }
 
-/* Menu */
-.menu-section {
-  margin-top: 36px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+.notice-row-title {
+  font-size: 15px;
+  color: #111827;
 }
 
-.menu-card-link {
+.notice-row-date {
+  font-size: 13px;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* 구인/구직 영역(현재 미사용) */
+.recruit-section {
+  margin-top: 28px;
+}
+
+.recruit-card {
+  background-color: #eef1f7;
+  border-radius: 16px;
+  padding: 22px 20px;
+}
+
+.recruit-link {
+  display: block;
   text-decoration: none;
   color: inherit;
 }
 
-.menu-card {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 16px 18px;
-  margin-bottom: 12px;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
-  border: 1px solid #e5e7eb;
-}
-
-.menu-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
-}
-
-.menu-card .icon {
-  font-size: 28px;
-  margin-bottom: 10px;
-}
-
-.menu-card .title {
-  font-size: 14px;
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.menu-card .desc {
-  font-size: 12px;
-  color: #666;
-}
-
-/* PWA 설치 버튼 */
-.install-button {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: none;
-  background: #2563eb;
-  color: white;
+.recruit-slot {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
   font-weight: 600;
 }
 
-/* Responsive */
+/* 모바일 */
 @media (max-width: 768px) {
-  .hero-notice {
-    padding: 20px 18px;
+  .content {
+    padding: 0 16px 28px;
+  }
+
+  .hero-image img {
+    height: 190px;
   }
 }
 </style>

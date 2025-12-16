@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+//import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { supabase } from '@/lib/supabaseClient'
 
 type Notice = {
@@ -11,7 +12,7 @@ type Notice = {
 }
 
 const route = useRoute()
-const router = useRouter()
+//const router = useRouter()
 
 const notice = ref<Notice | null>(null)
 const loading = ref(true)
@@ -50,17 +51,19 @@ onMounted(async () => {
   loading.value = false
 })
 
+/*
 const goBack = () => {
   router.back()
 }
+*/
 </script>
 
 <template>
   <div class="page">
     <main class="content">
-      <button class="back-button" @click="goBack">
+      <!--<button class="back-button" @click="goBack">
         ← 목록으로
-      </button>
+      </button>-->
 
       <section v-if="loading" class="card">
         <p class="info-text">공지 상세를 불러오는 중입니다...</p>

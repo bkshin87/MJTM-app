@@ -14,6 +14,8 @@ const confirmPassword = ref('')
 const name = ref('')
 const entranceYear = ref<number | null>(null)
 const phone = ref('')
+const company = ref('')   // 회사명 추가
+
 
 // UI 상태
 const loading = ref(false)
@@ -39,12 +41,13 @@ const handleSignUp = async () => {
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
     email: email.value,
     password: password.value,
-  }) // 이메일/비밀번호 회원가입[web:711]
+  })
 
   if (signUpError) {
     loading.value = false
     console.error(signUpError)
-    errorMessage.value = signUpError.message || '회원가입 중 오류가 발생했습니다.'
+    errorMessage.value =
+      signUpError.message || '회원가입 중 오류가 발생했습니다.'
     return
   }
 
@@ -56,14 +59,13 @@ const handleSignUp = async () => {
   }
 
   // 2) members 테이블에 동문 정보 저장
-  const { error: profileError } = await supabase
-    .from('members')
-    .insert({
-      id: user.id,                    // auth.users.id와 1:1 매칭
-      name: name.value,
-      entrance_year: entranceYear.value,
-      phone: phone.value,
-    })
+  const { error: profileError } = await supabase.from('members').insert({
+    id: user.id,
+    name: name.value,
+    entrance_year: entranceYear.value,
+    phone: phone.value,
+    company: company.value,   // 회사명 저장
+  })
 
   loading.value = false
 
@@ -79,16 +81,14 @@ const handleSignUp = async () => {
     '회원가입이 완료되었습니다.\n이메일로 전송된 인증 메일을 확인하고, 링크를 눌러 가입을 완료해 주세요.'
   )
 
-  // 원하면 로그인 페이지로 이동
   router.push({ name: 'login' })
 }
 </script>
 
-
 <template>
   <div class="page">
     <main class="content">
-      <section class="card">
+      <section class="signup-section">
         <h2 class="title">회원가입</h2>
 
         <form class="form" @submit.prevent="handleSignUp">
@@ -117,7 +117,15 @@ const handleSignUp = async () => {
               placeholder="010-0000-0000"
             />
           </label>
-
+          <label class="field">
+            <span class="label">회사명</span>
+            <input
+              v-model="company"
+              type="company"
+              class="input"
+              placeholder=""
+            />
+          </label>
           <!-- Auth 정보 -->
           <label class="field">
             <span class="label">이메일</span>
@@ -125,7 +133,7 @@ const handleSignUp = async () => {
               v-model="email"
               type="email"
               class="input"
-              placeholder="you@example.com"
+              placeholder="myongji@example.com"
             />
           </label>
 
@@ -151,63 +159,69 @@ const handleSignUp = async () => {
   </div>
 </template>
 
-
 <style scoped>
 .page {
   min-height: 100vh;
   background: #ffffff;
   color: #111827;
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
 }
 
+/* App.vue 헤더/탭 아래 여백 + 폭은 홈/로그인과 동일 */
 .content {
-  max-width: 400px;
-  margin: 40px auto;
+  max-width: 980px;
+  margin: 24px auto 0;
   padding: 0 20px;
 }
 
-.card {
-  background: #f3f4f6;
-  border-radius: 14px;
-  padding: 20px 22px;
+/* 회원가입 섹션 */
+.signup-section {
+  margin-top: 16px;
 }
 
 .title {
-  margin: 0 0 16px;
-  font-size: 22px;
-  font-weight: 700;
+  margin: 0 0 20px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
 }
 
+/* 폼 레이아웃 */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .label {
-  font-size: 13px;
-  color: #4b5563;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
 }
 
+/* 인풋: 로그인 페이지와 동일 스타일 */
 .input {
-  height: 34px;
-  padding: 0 10px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
   font-size: 14px;
+  background-color: #ffffff;
 }
 
 .input:focus {
-  border-color: #3b82f6;
+  border-color: #1d4ed8;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
 }
 
+/* 메시지 */
 .error {
   margin: 0;
   font-size: 13px;
@@ -220,15 +234,17 @@ const handleSignUp = async () => {
   color: #15803d;
 }
 
+/* 버튼: 진한 남색 긴 pill */
 .submit-btn {
-  margin-top: 4px;
-  padding: 8px 0;
+  margin-top: 12px;
+  width: 100%;
+  padding: 12px 0;
   border-radius: 999px;
   border: none;
-  background: #1d4ed8;
+  background: #0b3b7a;
   color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -236,5 +252,11 @@ const handleSignUp = async () => {
   opacity: 0.6;
   cursor: default;
 }
-</style>
 
+/* 모바일 */
+@media (max-width: 768px) {
+  .content {
+    padding: 0 16px;
+  }
+}
+</style>

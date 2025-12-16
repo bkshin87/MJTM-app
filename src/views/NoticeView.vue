@@ -8,6 +8,7 @@ type Notice = {
   title: string
   content: string
   created_at: string
+  author?: string | null
 }
 
 const router = useRouter()
@@ -15,19 +16,17 @@ const router = useRouter()
 const notices = ref<Notice[]>([])
 const loading = ref(false)
 const errorMessage = ref('')
-const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-
-// 검색 상태
 const searchQuery = ref('')
 
 // 페이징 상태
 const page = ref(1)
-const pageSize = 5
+const pageSize = 10          // 필요하면 10으로 변경
 const totalCount = ref(0)
 const totalPages = ref(1)
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 async function fetchNotices() {
   loading.value = true
@@ -44,7 +43,6 @@ async function fetchNotices() {
 
   const q = searchQuery.value.trim()
   if (q) {
-    // 제목 OR 내용에서 검색 (대소문자 무시)
     query = query.or(`title.ilike.%${q}%,content.ilike.%${q}%`)
   }
 
@@ -63,7 +61,6 @@ async function fetchNotices() {
   loading.value = false
 }
 
-// 검색 버튼/엔터로 검색할 때 1페이지부터 다시 조회
 function handleSearch() {
   page.value = 1
   fetchNotices()
@@ -77,12 +74,10 @@ watch(page, async () => {
 })
 </script>
 
-
-
-
 <template>
   <div class="page">
     <main class="content">
+      <!-- 상단 제목 + 검색 -->
       <section class="section-header">
         <h2 class="section-title">공지사항</h2>
 
@@ -100,36 +95,37 @@ watch(page, async () => {
         </div>
       </section>
 
-      <section v-if="loading" class="card">
-        <p class="welcome-text">공지 목록을 불러오는 중입니다...</p>
+      <!-- 로딩/에러/빈 상태 -->
+      <section v-if="loading" class="state-section">
+        <p class="state-text">공지 목록을 불러오는 중입니다...</p>
       </section>
 
-      <section v-else-if="errorMessage" class="card">
-        <p class="welcome-text">{{ errorMessage }}</p>
+      <section v-else-if="errorMessage" class="state-section">
+        <p class="state-text">{{ errorMessage }}</p>
       </section>
 
-      <section v-else-if="notices.length === 0" class="card">
-        <p class="welcome-text">검색 조건에 맞는 공지가 없습니다.</p>
+      <section v-else-if="notices.length === 0" class="state-section">
+        <p class="state-text">검색 조건에 맞는 공지가 없습니다.</p>
       </section>
 
-      <section v-else class="list">
-        <article
-          v-for="notice in notices"
-          :key="notice.id"
-          class="card notice-item"
-          @click="router.push({ name: 'notice-detail', params: { id: notice.id } })"
-        >
-          <h3 class="notice-title">{{ notice.title }}</h3>
-          <p class="notice-date">
-            {{ new Date(notice.created_at).toLocaleString() }}
-          </p>
-          <!-- 필요하면 내용 일부 노출
-          <p class="notice-content">
-            {{ notice.content }}
-          </p>
-          -->
-        </article>
+      <!-- 리스트 -->
+      <section v-else class="notice-section">
+        <ul class="notice-list">
+          <li
+            v-for="notice in notices"
+            :key="notice.id"
+            class="notice-row"
+            @click="router.push({ name: 'notice-detail', params: { id: notice.id } })"
+          >
+            <span class="notice-title">{{ notice.title }}</span>
+            <span class="notice-author">관리자</span>
+            <span class="notice-date">
+              {{ new Date(notice.created_at).toLocaleDateString('ko-KR') }}
+            </span>
+          </li>
+        </ul>
 
+        <!-- 페이징 (리스트 바로 아래 고정) -->
         <div class="pagination">
           <button
             class="page-button"
@@ -165,130 +161,139 @@ watch(page, async () => {
             마지막
           </button>
         </div>
+
+        <!-- 필요하면 등록 버튼은 아래에 따로 배치 -->
+        <!--
+        <div class="write-area">
+          <button
+            type="button"
+            class="write-button"
+            @click="router.push({ name: 'notice-write' })"
+          >
+            등록
+          </button>
+        </div>
+        -->
       </section>
     </main>
   </div>
 </template>
-
-
 
 <style scoped>
 .page {
   min-height: 100vh;
   background: #ffffff;
   color: #111827;
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
 }
 
+/* 본문 폭: 홈/로그인과 맞춤 */
 .content {
-  max-width: 1200px;
+  max-width: 980px;
   margin: 24px auto;
   padding: 0 20px;
 }
 
-/* 헤더: 제목 + 검색창 우측 배치 */
+/* 상단 제목 + 검색창 */
 .section-header {
   margin-bottom: 16px;
   display: flex;
   align-items: center;
-  /* 양쪽 끝 정렬 대신, 제목은 고정, search-box가 나머지 채우도록 */
-  /* justify-content: space-between;  <= 제거 */
   gap: 12px;
 }
 
-/* 제목: 고정 폭 */
 .section-title {
   margin: 0;
   font-size: 24px;
-  font-weight: 700;
-  white-space: nowrap; /* 줄바꿈 방지 */
-  flex: 0 0 auto;      /* 내용만큼만, 고정 */
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-/* 검색 박스 */
+/* 검색 박스: 시안처럼 긴 인풋 + 파란 버튼 */
 .search-box {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex: 1 1 auto;      /* 남은 공간 채우고, 브라우저 줄면 같이 줄어듦 */
-  min-width: 0;        /* flex 아이템이 제대로 줄어들 수 있게 */
+  margin-left: auto;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
 }
 
 .search-input {
-  height: 32px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  font-size: 13px;
-  min-width: 80px;
-  width: 100%;         /* search-box 안에서 가로 공간을 채우도록 */
+  height: 40px;
+  padding: 0 14px;
+  border: none;
+  font-size: 14px;
+  min-width: 200px;
   outline: none;
 }
 
-.search-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
-}
-
 .search-button {
-  height: 32px;
-  width: 32px;
-  border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  background: #e5edff;
+  height: 40px;
+  width: 48px;
+  border: none;
+  background: #0b3b7a;
+  color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* 카드: 흰 바탕 위 연그레이 박스 */
-.card {
-  background: #f3f4f6;
-  border-radius: 14px;
-  padding: 16px 18px;
-  margin-bottom: 12px;
+/* 상태 메시지 */
+.state-section {
+  padding: 40px 0;
+  text-align: center;
 }
 
-.welcome-text {
+.state-text {
   margin: 0;
   font-size: 14px;
   color: #6b7280;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+/* 리스트 전체 */
+.notice-section {
+  margin-top: 8px;
 }
 
-/* 공지 아이템 카드 */
-.notice-item {
-  background: #ffffff;
+/* 리스트 UL */
+.notice-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* 한 줄: 제목 / 작성자 / 날짜 */
+.notice-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  column-gap: 16px;
+  align-items: center;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f3f4f6;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
-  border: 1px solid #e5e7eb;
 }
 
 .notice-title {
-  margin: 0 0 4px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 15px;
   color: #111827;
 }
 
+.notice-author {
+  font-size: 13px;
+  color: #6b7280;
+}
+
 .notice-date {
-  margin: 0 0 8px;
-  font-size: 12px;
+  font-size: 13px;
   color: #9ca3af;
+  white-space: nowrap;
 }
 
-.notice-content {
-  margin: 0;
-  font-size: 14px;
-  color: #4b5563;
-}
-
-/* 페이징 */
+/* 페이징 (pill 버튼 스타일) */
 .pagination {
   display: flex;
   align-items: center;
@@ -298,24 +303,42 @@ watch(page, async () => {
 }
 
 .page-button {
+  min-width: 52px;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid #cbd5f5;
-  background: #e5edff;
-  color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 600;
+  border: 1px solid #dbe3ff;
+  font-size: 13px;
   cursor: pointer;
+  background: #e5edff;
+  color: #0b3b7a;
 }
 
+/* 비활성 버튼: 흐리게 */
 .page-button:disabled {
-  opacity: 0.4;
+  background: #f3f4ff;
+  color: #cbd5f5;
+  border-color: #e5e7fb;
   cursor: default;
 }
 
 .page-info {
-  font-size: 12px;
-  color: #6b7280;
+  font-size: 13px;
+  color: #9ca3af;
 }
 
+/* 모바일 */
+@media (max-width: 768px) {
+  .content {
+    padding: 0 16px;
+  }
+
+  .notice-row {
+    grid-template-columns: 1fr auto;
+    row-gap: 4px;
+  }
+
+  .notice-author {
+    display: none;
+  }
+}
 </style>
