@@ -209,11 +209,11 @@ const handleSignup = () => {
 
 /* 버튼 스타일 */
 .auth-btn {
-  min-width: 88px;
-  padding: 6px 16px;
+  min-width: 58px;          /* 88px → 약 2/3 */
+  padding: 4px 10px;        /* 6px 16px → 2/3 정도로 축소 */
   border-radius: 999px;
   border: 1px solid #0b3b7a;
-  font-size: 13px;
+  font-size: 12px;          /* 글자도 살짝 줄이기 */
   font-weight: 600;
   text-align: center;
   cursor: pointer;

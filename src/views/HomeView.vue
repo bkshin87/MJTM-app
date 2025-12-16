@@ -133,11 +133,16 @@ const goToNoticeDetail = (id: number) => {
 /* 탭 메뉴 */
 .tabs {
   display: flex;
-  justify-content: center;
+  /* 기존: justify-content: center;  → 가운데 정렬 대신 좌측 정렬 */
+  justify-content: flex-start;
   gap: 28px;
   padding-top: 12px;
   padding-bottom: 10px;
   border-bottom: 1px solid #e5e7eb;
+
+  overflow-x: auto;      /* 가로 스크롤 허용 */
+  white-space: nowrap;   /* 줄바꿈 방지 */
+  -webkit-overflow-scrolling: touch; /* 모바일 부드러운 스크롤 */
 }
 
 .tab {
@@ -146,8 +151,9 @@ const goToNoticeDetail = (id: number) => {
   text-decoration: none;
   color: #111827;
   padding-bottom: 7px;
+  white-space: nowrap;    /* 각 탭 텍스트 줄바꿈 방지 */
+  flex-shrink: 0;         /* 좁아져도 탭 폭 유지 */
 }
-
 .tab.router-link-active {
   color: #0b3b7a;
   border-bottom: 3px solid #0b3b7a;

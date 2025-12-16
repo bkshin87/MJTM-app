@@ -218,20 +218,23 @@ watch(page, async () => {
   overflow: hidden;
   border: 1px solid #cbd5e1;
   background: #ffffff;
+  max-width: 360px;     /* 너무 넓어지지 않게 상한선만 주기 */
+  width: 100%;
 }
 
 .search-input {
+  flex: 1 1 auto;       /* ✅ 폭 줄어들 때 같이 줄어들도록 */
+  min-width: 0;         /* ✅ flex 아이템이 실제로 줄어들 수 있게 */
   height: 40px;
   padding: 0 14px;
   border: none;
   font-size: 14px;
-  min-width: 200px;
   outline: none;
 }
 
 .search-button {
+  flex: 0 0 48px;       /* ✅ 항상 48px 폭 확보 */
   height: 40px;
-  width: 48px;
   border: none;
   background: #0b3b7a;
   color: #ffffff;
