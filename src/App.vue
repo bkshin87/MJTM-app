@@ -123,10 +123,10 @@ const handleSignup = () => {
     <!-- 전역 푸터 -->
     <footer class="footer">
       <div class="footer-inner">
-        <p class="footer-title">명지대학교 토목공학과 총동문회</p>
+        <p class="footer-title">[ 명지대학교 토목공학과 총동문회 ]</p>
         <div class="footer-meta">
-          <span>관리자 : 김토목</span>|
-          <span>TEL : 010-1234-5678</span>|
+          <span>관리자 : 김토목</span>
+          <span>TEL : 010-1234-5678</span>
           <span>MAIL : MAIL@MAIL.COM</span>
         </div>
       </div>
@@ -254,12 +254,12 @@ const handleSignup = () => {
 
 .footer-meta {
   display: flex;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 3px;   /* 12px → 4px, 커서 한 칸 정도 간격 */
+  flex-direction: column;      /* 세로로 쌓기 */
+  gap: 0;                      /* span 사이 추가 간격 제거 */
 }
 
 .footer-meta span {
+  margin: 0;
   white-space: nowrap;
 }
 
