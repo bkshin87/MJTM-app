@@ -20,6 +20,7 @@ const handleLogin = async () => {
 
   loading.value = true
 
+  // const { data, error } = await supabase.auth.signInWithPassword({
   const { error } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value,
@@ -32,6 +33,9 @@ const handleLogin = async () => {
     errorMessage.value = error.message || '로그인에 실패했습니다.'
     return
   }
+
+  // 로그인 성공 → 다른 모든 기기 세션 종료 (현재 세션 제외)
+  await supabase.auth.signOut({ scope: 'others' })
 
   alert('환영합니다.')
   router.push({ name: 'home' })
