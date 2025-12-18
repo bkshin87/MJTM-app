@@ -78,10 +78,9 @@ const handleSignup = () => {
 
 <template>
   <div class="app">
-    <!-- 상단 헤더: (로고 + 버튼) 한 줄, 아래에 텍스트 -->
+    <!-- 상단 헤더 -->
     <header class="global-header">
       <div class="global-header-inner">
-        <!-- 1행: 로고와 버튼들이 한 줄에 정렬 -->
         <div class="header-top-row">
           <RouterLink to="/" class="logo-link">
             <img
@@ -108,12 +107,21 @@ const handleSignup = () => {
           </div>
         </div>
 
-        <!-- 2행: 로고 아래 텍스트 -->
+        <!-- 헤더 아래 텍스트 -->
         <div class="header-bottom-row">
           <span class="logo-subtitle">토목공학과 총동문회</span>
         </div>
       </div>
     </header>
+
+    <!-- 공통 상단 탭 -->
+    <nav class="tabs">
+      <RouterLink to="/about" class="tab">동문회소개</RouterLink>
+      <RouterLink to="/notice" class="tab">공지사항</RouterLink>
+      <RouterLink to="/members" class="tab">동문명부</RouterLink>
+      <RouterLink to="/album" class="tab">사진첩</RouterLink>
+      <RouterLink to="/event" class="tab">경조사</RouterLink>
+    </nav>
 
     <!-- 페이지별 콘텐츠 -->
     <main class="main">
@@ -142,12 +150,12 @@ const handleSignup = () => {
 <style scoped>
 .app {
   min-height: 100vh;
-  background: #ffffff;   /* 회색 → 흰색으로 변경 */
+  background: #ffffff;
   color: #111827;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* 헤더-메인-푸터 수직 배치 */
 }
 
 /* 상단 헤더 */
@@ -161,7 +169,7 @@ const handleSignup = () => {
   margin: 0 auto;
   padding: 14px 20px 10px;
   display: flex;
-  flex-direction: column; /* 위/아래 두 줄 */
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -169,12 +177,11 @@ const handleSignup = () => {
 .header-top-row {
   display: flex;
   justify-content: space-between;
-  align-items: center; /* 로고 세로 가운데와 버튼 정렬 */
+  align-items: center;
 }
 
 /* 2행: 로고 아래 텍스트 */
 .header-bottom-row {
-  /* 필요하면 여백 조정 */
 }
 
 .logo-link {
@@ -184,14 +191,14 @@ const handleSignup = () => {
 .logo-image {
   display: block;
   height: 40px;
-  width: auto;
+  width: 160px;
 }
 
-/* 로고와 텍스트 사이 간격 */
+/* 로고 아래 “토목공학과 총동문회” */
 .logo-subtitle {
   margin-top: 6px;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 700;
   color: #111827;
 }
 
@@ -209,11 +216,11 @@ const handleSignup = () => {
 
 /* 버튼 스타일 */
 .auth-btn {
-  min-width: 58px;          /* 88px → 약 2/3 */
-  padding: 4px 10px;        /* 6px 16px → 2/3 정도로 축소 */
+  min-width: 58px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid #0b3b7a;
-  font-size: 12px;          /* 글자도 살짝 줄이기 */
+  font-size: 12px;
   font-weight: 600;
   text-align: center;
   cursor: pointer;
@@ -226,13 +233,52 @@ const handleSignup = () => {
   color: #ffffff;
 }
 
-/* 메인 영역: 헤더/푸터 사이를 채우도록 */
+/* 탭 메뉴 – 헤더보다 살짝 가는 굵기 */
+.tabs {
+  display: flex;
+  justify-content: flex-start;
+  gap: 26px;
+  padding-top: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding-left: 14px;
+  padding-right: 14px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab {
+  font-family: 'Noto Sans KR', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: #111827;
+  padding-bottom: 7px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.tab.router-link-active {
+  color: #0b3b7a;
+  border-bottom: 3px solid #0b3b7a;
+}
+
+/* 메인 영역: 남는 공간을 채워서 footer를 항상 아래로 */
 .main {
   flex: 1;
   padding: 0;
 }
 
-/* 푸터: 화면 전체 폭 */
+/* 푸터 */
 .footer {
   background-color: #f3f4f6;
   border-top: 1px solid #e5e7eb;
@@ -242,7 +288,7 @@ const handleSignup = () => {
   max-width: 980px;
   margin: 0 auto;
   padding: 14px 20px 18px;
-  text-align: left;        /* 가운데 → 왼쪽 정렬 */
+  text-align: left;
   font-size: 11px;
   color: #6b7280;
 }
@@ -254,8 +300,8 @@ const handleSignup = () => {
 
 .footer-meta {
   display: flex;
-  flex-direction: column;      /* 세로로 쌓기 */
-  gap: 0;                      /* span 사이 추가 간격 제거 */
+  flex-direction: column;
+  gap: 0;
 }
 
 .footer-meta span {

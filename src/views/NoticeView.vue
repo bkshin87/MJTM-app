@@ -77,6 +77,15 @@ watch(page, async () => {
 <template>
   <div class="page">
     <main class="content">
+      <template>
+        <nav class="tabs">
+          <RouterLink to="/about" class="tab">동문회소개</RouterLink>
+          <RouterLink to="/notice" class="tab">공지사항</RouterLink>
+          <RouterLink to="/members" class="tab">동문명부</RouterLink>
+          <RouterLink to="/album" class="tab">사진첩</RouterLink>
+          <RouterLink to="/event" class="tab">경조사</RouterLink>
+        </nav>
+      </template>
       <!-- 상단 제목 + 검색 -->
       <section class="section-header">
         <h2 class="section-title">공지사항</h2>
@@ -204,7 +213,7 @@ watch(page, async () => {
 
 .section-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -281,7 +290,7 @@ watch(page, async () => {
 }
 
 .notice-title {
-  font-size: 15px;
+  font-size: 13px;
   color: #111827;
 }
 

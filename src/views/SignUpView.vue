@@ -207,7 +207,7 @@ const handleSignUp = async () => {
 
 /* 인풋: 로그인 페이지와 동일 스타일 */
 .input {
-  height: 44px;
+  height: 40px;
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid #e5e7eb;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { onMounted, ref } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -11,43 +11,61 @@ type Notice = {
   created_at: string
 }
 
+type AlbumItem = {
+  id: number
+  title: string
+  created_at: string
+}
+
 const notices = ref<Notice[]>([])
-const loading = ref(true)
+const albums = ref<AlbumItem[]>([])
+const loadingNotice = ref(true)
+const loadingAlbum = ref(true)
 
 onMounted(async () => {
-  const { data, error } = await supabase
+  // 공지사항
+  const { data: noticeData, error: noticeError } = await supabase
     .from('notice')
     .select('id, title, created_at')
-    .order('created_at', { ascending: false }) // 최신순
-    .limit(4)                                  // 최근 4건만
+    .order('created_at', { ascending: false })
+    .limit(4)
 
-  if (error) {
-    console.error('notice fetch error:', error)
+  if (noticeError) {
+    console.error('notice fetch error:', noticeError)
     notices.value = []
   } else {
-    notices.value = (data ?? []) as Notice[]
+    notices.value = (noticeData ?? []) as Notice[]
   }
+  loadingNotice.value = false
 
-  loading.value = false
+  // 사진첩 (album 테이블 가정)
+  const { data: albumData, error: albumError } = await supabase
+    .from('album')
+    .select('id, title, created_at')
+    .order('created_at', { ascending: false })
+    .limit(4)
+
+  if (albumError) {
+    console.error('album fetch error:', albumError)
+    albums.value = []
+  } else {
+    albums.value = (albumData ?? []) as AlbumItem[]
+  }
+  loadingAlbum.value = false
 })
 
 const goToNoticeDetail = (id: number) => {
   router.push({ name: 'notice-detail', params: { id } })
+}
+
+const goToAlbumDetail = (id: number) => {
+  router.push({ name: 'album-detail', params: { id } })
 }
 </script>
 
 <template>
   <div class="page">
     <main class="content">
-      <!-- 네비 탭 -->
-      <nav class="tabs">
-        <RouterLink to="/about" class="tab">동문회소개</RouterLink>
-        <RouterLink to="/notice" class="tab">공지사항</RouterLink>
-        <RouterLink to="/members" class="tab">동문명부</RouterLink>
-        <RouterLink to="/album" class="tab">사진첩</RouterLink>
-        <RouterLink to="/event" class="tab">경조사</RouterLink>
-      </nav>
-
       <!-- 상단 큰 배너 -->
       <section class="hero">
         <div class="hero-image">
@@ -72,7 +90,7 @@ const goToNoticeDetail = (id: number) => {
         </div>
 
         <ul class="notice-list">
-          <li v-if="loading" class="notice-empty">
+          <li v-if="loadingNotice" class="notice-empty">
             불러오는 중입니다...
           </li>
 
@@ -89,8 +107,51 @@ const goToNoticeDetail = (id: number) => {
             </span>
           </li>
 
-          <li v-if="!loading && notices.length === 0" class="notice-empty">
+          <li
+            v-if="!loadingNotice && notices.length === 0"
+            class="notice-empty"
+          >
             등록된 공지가 없습니다.
+          </li>
+        </ul>
+      </section>
+
+      <!-- 사진첩 영역 (공지와 동일한 스타일) -->
+      <section class="notice-section album-section">
+        <div class="notice-header">
+          <h2 class="notice-heading">사진첩</h2>
+          <button
+            type="button"
+            class="notice-add-btn"
+            @click="router.push('/album')"
+          >
+            +
+          </button>
+        </div>
+
+        <ul class="notice-list">
+          <li v-if="loadingAlbum" class="notice-empty">
+            불러오는 중입니다...
+          </li>
+
+          <li
+            v-else
+            v-for="a in albums"
+            :key="a.id"
+            class="notice-row"
+            @click="goToAlbumDetail(a.id)"
+          >
+            <span class="notice-row-title">{{ a.title }}</span>
+            <span class="notice-row-date">
+              {{ new Date(a.created_at).toLocaleDateString('ko-KR') }}
+            </span>
+          </li>
+
+          <li
+            v-if="!loadingAlbum && albums.length === 0"
+            class="notice-empty"
+          >
+            등록된 사진이 없습니다.
           </li>
         </ul>
       </section>
@@ -130,35 +191,6 @@ const goToNoticeDetail = (id: number) => {
   background-color: #ffffff;
 }
 
-/* 탭 메뉴 */
-.tabs {
-  display: flex;
-  /* 기존: justify-content: center;  → 가운데 정렬 대신 좌측 정렬 */
-  justify-content: flex-start;
-  gap: 28px;
-  padding-top: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
-
-  overflow-x: auto;      /* 가로 스크롤 허용 */
-  white-space: nowrap;   /* 줄바꿈 방지 */
-  -webkit-overflow-scrolling: touch; /* 모바일 부드러운 스크롤 */
-}
-
-.tab {
-  font-size: 15px;
-  font-weight: 500;
-  text-decoration: none;
-  color: #111827;
-  padding-bottom: 7px;
-  white-space: nowrap;    /* 각 탭 텍스트 줄바꿈 방지 */
-  flex-shrink: 0;         /* 좁아져도 탭 폭 유지 */
-}
-.tab.router-link-active {
-  color: #0b3b7a;
-  border-bottom: 3px solid #0b3b7a;
-}
-
 /* 메인 배너 */
 .hero {
   margin-top: 18px;
@@ -192,9 +224,13 @@ const goToNoticeDetail = (id: number) => {
   white-space: nowrap;
 }
 
-/* 공지사항 */
+/* 공지사항 / 사진첩 공통 */
 .notice-section {
   margin-top: 4px;
+}
+
+.album-section {
+  margin-top: 24px; /* 공지와 약간 간격 */
 }
 
 .notice-header {
@@ -206,7 +242,7 @@ const goToNoticeDetail = (id: number) => {
 
 .notice-heading {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #111827;
 }
@@ -249,6 +285,12 @@ const goToNoticeDetail = (id: number) => {
   font-size: 13px;
   color: #9ca3af;
   white-space: nowrap;
+}
+
+.notice-empty {
+  padding: 8px 4px;
+  font-size: 14px;
+  color: #6b7280;
 }
 
 /* 구인/구직 영역(현재 미사용) */

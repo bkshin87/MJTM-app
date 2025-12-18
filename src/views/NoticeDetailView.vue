@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-//import { useRoute, useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -12,11 +11,14 @@ type Notice = {
 }
 
 const route = useRoute()
-//const router = useRouter()
 
 const notice = ref<Notice | null>(null)
 const loading = ref(true)
 const errorMessage = ref('')
+
+// 입력용 상태
+const titleInput = ref('')
+const contentInput = ref('')
 
 onMounted(async () => {
   const idParam = route.params.id
@@ -48,6 +50,8 @@ onMounted(async () => {
   }
 
   notice.value = data as Notice
+  titleInput.value = notice.value.title
+  contentInput.value = notice.value.content
   loading.value = false
 })
 
@@ -61,9 +65,11 @@ const goBack = () => {
 <template>
   <div class="page">
     <main class="content">
-      <!--<button class="back-button" @click="goBack">
+      <!--
+      <button class="back-button" @click="goBack">
         ← 목록으로
-      </button>-->
+      </button>
+      -->
 
       <section v-if="loading" class="card">
         <p class="info-text">공지 상세를 불러오는 중입니다...</p>
@@ -74,17 +80,23 @@ const goBack = () => {
       </section>
 
       <section v-else-if="notice" class="detail-wrapper">
-        <!-- 상단: 타이틀/날짜 영역 -->
+        <!-- 상단: 제목 입력 영역 -->
         <section class="card header-card">
-          <h2 class="notice-title">{{ notice.title }}</h2>
-
+          <input
+            v-model="titleInput"
+            class="notice-title-input"
+            type="text"
+            placeholder="공지사항 제목을 입력하세요."
+          />
         </section>
 
-        <!-- 하단: 본문 영역 분리 -->
+        <!-- 하단: 본문 입력 영역 -->
         <section class="card content-card">
-          <p class="notice-content">
-            {{ notice.content }}
-          </p>
+          <textarea
+            v-model="contentInput"
+            class="notice-content-textarea"
+            placeholder="공지사항 내용을 입력하세요."
+          ></textarea>
           <p class="notice-date">
             {{ new Date(notice.created_at).toLocaleString() }}
           </p>
@@ -144,20 +156,18 @@ const goBack = () => {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  min-height: 15px;
+  max-height: 15px;
 }
 
-.notice-title {
-  margin: 0 0 6px;
-  font-size: 18px;
+.notice-title-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 14px;
   font-weight: 700;
   color: #111827;
-}
-
-.notice-date {
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: #9ca3af;
-  text-align: right;        /* 오른쪽 정렬 */
+  padding: 0;
 }
 
 /* 하단 본문 카드 */
@@ -165,19 +175,29 @@ const goBack = () => {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-  min-height: 260px;
-  max-height: 260px;
+  min-height: 300px;
+  max-height: 300px;
   display: flex;
-  flex-direction: column;   /* 위: content, 아래: date */
+  flex-direction: column;
   padding: 16px 18px;
 }
 
-.notice-content {
-  margin: 0;
-  font-size: 14px;
+.notice-content-textarea {
+  flex: 1;
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 12px;
   color: #4b5563;
+  resize: none;
   white-space: pre-wrap;
-  flex: 1;                  /* 남는 높이를 차지 */
-  overflow-y: auto;         /* 내용 많으면 내부 스크롤 */
+  overflow-y: auto;
+}
+
+.notice-date {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #9ca3af;
+  text-align: right; /* 오른쪽 정렬 */
 }
 </style>
