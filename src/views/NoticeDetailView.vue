@@ -101,6 +101,11 @@ const goBack = () => {
             {{ new Date(notice.created_at).toLocaleString() }}
           </p>
         </section>
+          <div class="actions">
+            <button type="button" class="action-btn">수정</button>
+            <button type="button" class="action-btn primary">저장</button>
+            <button type="button" class="action-btn danger">삭제</button>
+          </div>
       </section>
     </main>
   </div>
@@ -192,6 +197,37 @@ const goBack = () => {
   resize: none;
   white-space: pre-wrap;
   overflow-y: auto;
+}
+
+/* 버튼 영역 */
+.actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.action-btn {
+  min-width: 60px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+}
+
+.action-btn.primary {
+  border-color: #0b3b7a;
+  background: #0b3b7a;
+  color: #ffffff;
+}
+
+.action-btn.danger {
+  border-color: #dc2626;
+  color: #dc2626;
 }
 
 .notice-date {

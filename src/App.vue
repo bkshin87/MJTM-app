@@ -1,13 +1,24 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRouter } from 'vue-router'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
+import { canInstallPwa, deferredPromptEvent, setDeferredPrompt } from '@/pwaInstall'
 
 const router = useRouter()
 const isLoggedIn = ref(false)
 const displayName = ref('')
 const toastMessage = ref('')
 const toastVisible = ref(false)
+const canInstall = computed(() => canInstallPwa.value)
+
+const installApp = async () => {
+  if (!deferredPromptEvent) return
+
+  const result = await deferredPromptEvent.prompt()
+  console.log('PWA install outcome:', result.outcome)
+  setDeferredPrompt(null)
+}
+
 let toastTimer: number | null = null
 
 // members 테이블에서 프로필 불러오기
@@ -137,6 +148,15 @@ const handleSignup = () => {
           <span>TEL : 010-1234-5678</span>
           <span>MAIL : MAIL@MAIL.COM</span>
         </div>
+
+        <!-- 앱 다운로드 버튼 -->
+        <div class="footer-app-download">
+          <!--<button v-if="canInstall" @click="installApp" type="button" class="app-download-btn">-->
+            <button @click="installApp" type="button" class="app-download-btn">
+            <!--앱 다운로드 (iOS / Android)-->
+            다운로드
+          </button>
+        </div>
       </div>
     </footer>
 
@@ -191,7 +211,7 @@ const handleSignup = () => {
 .logo-image {
   display: block;
   height: 40px;
-  width: 160px;
+  width: 150px;
 }
 
 /* 로고 아래 “토목공학과 총동문회” */
@@ -291,6 +311,27 @@ const handleSignup = () => {
   text-align: left;
   font-size: 11px;
   color: #6b7280;
+  position: relative; /* 자식 버튼을 오른쪽 아래에 붙이기 위해 */
+}
+
+/* 앱 다운로드 버튼 영역 */
+.footer-app-download {
+  position: absolute;
+  right: 20px;
+  bottom: 14px;
+}
+
+/* 버튼 스타일 */
+.app-download-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #0b3b7a;
+  background: #0b3b7a;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .footer-title {

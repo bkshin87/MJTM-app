@@ -14,8 +14,7 @@ const confirmPassword = ref('')
 const name = ref('')
 const entranceYear = ref<number | null>(null)
 const phone = ref('')
-const company = ref('')   // 회사명 추가
-
+const company = ref('') // 회사명
 
 // UI 상태
 const loading = ref(false)
@@ -64,7 +63,7 @@ const handleSignUp = async () => {
     name: name.value,
     entrance_year: entranceYear.value,
     phone: phone.value,
-    company: company.value,   // 회사명 저장
+    company: company.value,
   })
 
   loading.value = false
@@ -88,9 +87,12 @@ const handleSignUp = async () => {
 <template>
   <div class="page">
     <main class="content">
-      <section class="signup-section">
-        <h2 class="title">회원가입</h2>
+      <!-- 공지사항 페이지와 같은 상단 탭 라인 정렬 -->
+      <section class="section-header">
+        <h2 class="section-title">회원가입</h2>
+      </section>
 
+      <section class="signup-section">
         <form class="form" @submit.prevent="handleSignUp">
           <!-- members 정보 -->
           <label class="field">
@@ -117,15 +119,17 @@ const handleSignUp = async () => {
               placeholder="010-0000-0000"
             />
           </label>
+
           <label class="field">
             <span class="label">회사명</span>
             <input
               v-model="company"
-              type="company"
+              type="text"
               class="input"
               placeholder=""
             />
           </label>
+
           <!-- Auth 정보 -->
           <label class="field">
             <span class="label">이메일</span>
@@ -161,29 +165,37 @@ const handleSignUp = async () => {
 
 <style scoped>
 .page {
-  min-height: 100vh;
+  min-height: 100%;
   background: #ffffff;
   color: #111827;
   font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
 }
 
-/* App.vue 헤더/탭 아래 여백 + 폭은 홈/로그인과 동일 */
+/* 공지사항 NoticeView와 동일한 폭/여백 기준 */
 .content {
   max-width: 980px;
-  margin: 24px auto 0;
-  padding: 0 20px;
+  margin: 16px auto 24px;
+  padding: 0 20px 16px;
+}
+
+/* 상단 타이틀 (공지사항의 section-header와 동일 구조) */
+.section-header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 /* 회원가입 섹션 */
 .signup-section {
-  margin-top: 16px;
-}
-
-.title {
-  margin: 0 0 20px;
-  font-size: 24px;
-  font-weight: 800;
-  color: #111827;
+  margin-top: 8px;
 }
 
 /* 폼 레이아웃 */
@@ -205,7 +217,7 @@ const handleSignUp = async () => {
   color: #111827;
 }
 
-/* 인풋: 로그인 페이지와 동일 스타일 */
+/* 인풋: 공지 검색/폼과 어울리게 */
 .input {
   height: 40px;
   padding: 0 14px;
@@ -234,7 +246,7 @@ const handleSignUp = async () => {
   color: #15803d;
 }
 
-/* 버튼: 진한 남색 긴 pill */
+/* 버튼: 공지 페이징 버튼 톤과 맞는 진한 남색 pill */
 .submit-btn {
   margin-top: 12px;
   width: 100%;

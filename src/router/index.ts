@@ -6,6 +6,7 @@ import NoticeDetailView from '../views/NoticeDetailView.vue'
 import EventView from '../views/EventView.vue'      // 경조사
 import AlbumView from '../views/AlbumView.vue'      // 사진첩
 import MemberView from '../views/MemberView.vue'    // 동문명부
+import MemberDetailView from '../views/MemberDetailView.vue'    // 동문명부
 
 import SignUpView from '../views/SignUpView.vue'
 import LoginView from '../views/LoginView.vue'
@@ -51,7 +52,13 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: LoginView },
+      component: LoginView
+    },
+    {
+      path: '/members/:id',
+      name: 'member-detail',
+      component: MemberDetailView
+    },
   ],
     //scrollBehavior(to, from, savedPosition) {
     scrollBehavior() {
