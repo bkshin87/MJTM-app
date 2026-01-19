@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { supabase } from '@/lib/supabaseClient'
+
 </script>
 
 <template>

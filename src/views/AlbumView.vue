@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
-
+import { useRouter } from 'vue-router'
 type Photo = {
   id: number
   title: string
   image_path: string
   created_at: string
 }
+
+const router = useRouter()
 
 const photos = ref<Photo[]>([])
 const loading = ref(false)
