@@ -9,8 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: '명지대학교 토목과 총동문회',
-        short_name: '명지대학교 토목과 총동문회',
+        name: 'MJCIVIL',
+        short_name: 'MJCIVIL',
         start_url: '/',
         display: 'standalone',
         background_color: '#1f1f1f',
