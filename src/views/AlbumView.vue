@@ -75,7 +75,7 @@ watch(page, async () => {
     <main class="content">
       <!-- 상단 제목 + 검색 (공지사항과 동일 구조) -->
       <section class="section-header">
-        <h2 class="section-title">사진첩</h2>
+        <!--<h2 class="section-title">사진첩</h2>-->
 
         <div class="search-box-wrapper">
           <div class="search-box">
@@ -159,6 +159,16 @@ watch(page, async () => {
           </button>
         </div>
       </section>
+      <!-- 등록 버튼 -->
+      <div class="actions">
+        <button
+          type="button"
+          class="action-btn"
+          @click="router.push({ name: 'notice-write' })"
+        >
+          등록
+        </button>
+      </div>
     </main>
   </div>
 </template>
@@ -318,6 +328,26 @@ watch(page, async () => {
 .page-info {
   font-size: 13px;
   color: #9ca3af;
+}
+
+/* 버튼 영역 */
+.actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.action-btn {
+  min-width: 60px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
 }
 
 /* 모바일 */

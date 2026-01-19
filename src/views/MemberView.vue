@@ -80,7 +80,7 @@ watch(page, async () => {
     <main class="content">
       <!-- 상단 제목 + 검색 -->
       <section class="section-header">
-        <h2 class="section-title">동문명부</h2>
+        <!--<h2 class="section-title">동문명부</h2>-->
 
         <div class="search-box-wrapper">
           <div class="search-box">
@@ -88,7 +88,7 @@ watch(page, async () => {
               v-model="searchQuery"
               type="text"
               class="search-input"
-              placeholder="입학년도 / 이름 / 전화번호 / 회사명 검색"
+              placeholder="이름 / 입학년도 / 전화번호 / 회사명 검색"
               @keyup.enter="handleSearch"
             />
             <button class="search-button" type="button" @click="handleSearch">
@@ -221,6 +221,7 @@ watch(page, async () => {
   border: 1px solid #cbd5e1;
   background: #ffffff;
   max-width: 360px;
+  max-height : 28px;
   width: 100%;
 }
 

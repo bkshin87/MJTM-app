@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabaseClient'
+//import MainTabs from '@/components/MainTabs.vue'
 
 type Notice = {
   id: number
@@ -20,7 +21,7 @@ const searchQuery = ref('')
 
 // 페이징 상태
 const page = ref(1)
-const pageSize = 10          // 필요하면 10으로 변경
+const pageSize = 10
 const totalCount = ref(0)
 const totalPages = ref(1)
 
@@ -77,34 +78,28 @@ watch(page, async () => {
 <template>
   <div class="page">
     <main class="content">
-      <template>
-        <nav class="tabs">
-          <RouterLink to="/about" class="tab">동문회소개</RouterLink>
-          <RouterLink to="/notice" class="tab">공지사항</RouterLink>
-          <RouterLink to="/members" class="tab">동문명부</RouterLink>
-          <RouterLink to="/album" class="tab">사진첩</RouterLink>
-          <RouterLink to="/event" class="tab">경조사</RouterLink>
-        </nav>
-      </template>
+      <!-- 공통 상단 탭 -->
+      <!--<MainTabs />-->
+
       <!-- 상단 제목 + 검색 -->
       <section class="section-header">
-  <h2 class="section-title">공지사항</h2>
+        <!--<h2 class="section-title">공지사항</h2>-->
 
-  <div class="search-box-wrapper">
-    <div class="search-box">
-      <input
-        v-model="searchQuery"
-        type="text"
-        class="search-input"
-        placeholder="제목/내용 검색"
-        @keyup.enter="handleSearch"
-      />
-      <button class="search-button" type="button" @click="handleSearch">
-        🔍
-      </button>
-    </div>
-  </div>
-</section>
+        <div class="search-box-wrapper">
+          <div class="search-box">
+            <input
+              v-model="searchQuery"
+              type="text"
+              class="search-input"
+              placeholder="제목/내용 검색"
+              @keyup.enter="handleSearch"
+            />
+            <button class="search-button" type="button" @click="handleSearch">
+              🔍
+            </button>
+          </div>
+        </div>
+      </section>
 
       <!-- 로딩/에러/빈 상태 -->
       <section v-if="loading" class="state-section">
@@ -136,7 +131,7 @@ watch(page, async () => {
           </li>
         </ul>
 
-        <!-- 페이징 (리스트 바로 아래 고정) -->
+        <!-- 페이징 -->
         <div class="pagination">
           <button
             class="page-button"
@@ -172,24 +167,18 @@ watch(page, async () => {
             마지막
           </button>
         </div>
-
-          <div class="actions">
-            <button type="button" class="action-btn">등록</button>
-          </div>
-
-        <!-- 필요하면 등록 버튼은 아래에 따로 배치 -->
-        <!--
-        <div class="write-area">
-          <button
-            type="button"
-            class="write-button"
-            @click="router.push({ name: 'notice-write' })"
-          >
-            등록
-          </button>
-        </div>
-        -->
       </section>
+
+      <!-- 등록 버튼 -->
+      <div class="actions">
+        <button
+          type="button"
+          class="action-btn"
+          @click="router.push({ name: 'notice-write' })"
+        >
+          등록
+        </button>
+      </div>
     </main>
   </div>
 </template>
@@ -202,19 +191,19 @@ watch(page, async () => {
   font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
 }
 
-/* 본문 폭: 홈/로그인과 맞춤 */
+/* 본문 폭 */
 .content {
   max-width: 980px;
-  margin: 16px auto 24px; /* 위/아래 마진 조금 줄임 */
-  padding: 0 20px 16px;   /* 아래 패딩도 많지 않게 */
+  margin: 16px auto 24px;
+  padding: 0 20px 16px;
 }
 
 /* 상단 제목 + 검색창 */
 .section-header {
   margin-bottom: 16px;
   display: flex;
-  flex-direction: column;  /* 세로 정렬 */
-  gap: 8px;               /* 제목과 검색박스 사이 간격 */
+  flex-direction: column;
+  gap: 8px;
 }
 
 .section-title {
@@ -224,11 +213,11 @@ watch(page, async () => {
   white-space: nowrap;
 }
 
-/* 검색 박스를 한 줄 아래 전체 폭에 맞게 */
+/* 검색 박스 */
 .search-box-wrapper {
   width: 100%;
   display: flex;
-  justify-content: flex-end;  /* 🔹 이 줄 추가 */
+  justify-content: flex-end;
 }
 
 .search-box {
@@ -239,13 +228,13 @@ watch(page, async () => {
   border: 1px solid #cbd5e1;
   background: #ffffff;
   max-width: 360px;
-  max-height : 28px;
+  max-height: 28px;
   width: 100%;
 }
 
 .search-input {
-  flex: 1 1 auto;       /* ✅ 폭 줄어들 때 같이 줄어들도록 */
-  min-width: 0;         /* ✅ flex 아이템이 실제로 줄어들 수 있게 */
+  flex: 1 1 auto;
+  min-width: 0;
   height: 40px;
   padding: 0 14px;
   border: none;
@@ -254,7 +243,7 @@ watch(page, async () => {
 }
 
 .search-button {
-  flex: 0 0 48px;       /* ✅ 항상 48px 폭 확보 */
+  flex: 0 0 48px;
   height: 30px;
   border: none;
   background: #0b3b7a;
@@ -280,7 +269,7 @@ watch(page, async () => {
 /* 리스트 전체 */
 .notice-section {
   margin-top: 8px;
-  padding-bottom: 8px;    /* 리스트 바로 아래만 살짝 여백 */
+  padding-bottom: 8px;
 }
 
 /* 리스트 UL */
@@ -318,7 +307,7 @@ watch(page, async () => {
   white-space: nowrap;
 }
 
-/* 페이징 (pill 버튼 스타일) */
+/* 페이징 */
 .pagination {
   display: flex;
   align-items: center;
@@ -338,7 +327,6 @@ watch(page, async () => {
   color: #0b3b7a;
 }
 
-/* 비활성 버튼: 흐리게 */
 .page-button:disabled {
   background: #f3f4ff;
   color: #cbd5f5;
@@ -370,18 +358,6 @@ watch(page, async () => {
   color: #374151;
   cursor: pointer;
 }
-
-.action-btn.primary {
-  border-color: #0b3b7a;
-  background: #0b3b7a;
-  color: #ffffff;
-}
-
-.action-btn.danger {
-  border-color: #dc2626;
-  color: #dc2626;
-}
-
 
 /* 모바일 */
 @media (max-width: 768px) {

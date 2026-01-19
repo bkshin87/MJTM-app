@@ -42,7 +42,7 @@ onMounted(async () => {
 
   // 사진첩 (album 테이블 가정)
   const { data: albumData, error: albumError } = await supabase
-    .from('album')
+    .from('album_photos')
     .select('id, title, created_at')
     .order('created_at', { ascending: false })
     .limit(4)

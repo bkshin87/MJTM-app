@@ -259,8 +259,8 @@ const handleSignup = () => {
   justify-content: flex-start;
   gap: 26px;
   padding-top: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+
+
 
   width: 100%;
   max-width: 980px;
