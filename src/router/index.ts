@@ -1,15 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
+
 import HomeView from '../views/HomeView.vue'
 
 import AboutView from '../views/AboutView.vue'
 
 import NoticeView from '../views/NoticeView.vue'
 import NoticeDetailView from '../views/NoticeDetailView.vue'
+import NoticeWriteView from '../views/NoticeWriteView.vue'
 
 import EventView from '../views/EventView.vue'      // 경조사
 import AlbumView from '../views/AlbumView.vue'      // 사진첩
 import MemberView from '../views/MemberView.vue'    // 동문명부
-import MemberDetailView from '../views/MemberDetailView.vue'    // 동문명부
+import MemberDetailView from '../views/MemberDetailView.vue'
 
 import SignUpView from '../views/SignUpView.vue'
 import LoginView from '../views/LoginView.vue'
@@ -27,31 +29,54 @@ const router = createRouter({
       name: 'about',
       component: AboutView,
     },
+
+    // 공지 목록
     {
       path: '/notice',
       name: 'notice',
       component: NoticeView,
     },
+    // 공지 상세 (id로 조회)
     {
-      path: '/notice/:id',          // 동적 상세 페이지
+      path: '/notice/:id',
       name: 'notice-detail',
       component: NoticeDetailView,
     },
+    // 공지 작성 (새 글 작성용)
+    {
+      path: '/notice/write',
+      name: 'notice-write',
+      component: NoticeWriteView,
+    },
+
+    // 경조사
     {
       path: '/event',
       name: 'event',
       component: EventView,
     },
+
+    // 사진첩
     {
       path: '/album',
       name: 'album',
       component: AlbumView,
     },
+
+    // 동문명부 목록
     {
       path: '/members',
       name: 'members',
       component: MemberView,
     },
+    // 동문 상세
+    {
+      path: '/members/:id',
+      name: 'member-detail',
+      component: MemberDetailView,
+    },
+
+    // 회원가입 / 로그인
     {
       path: '/signup',
       name: 'signup',
@@ -60,20 +85,11 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: LoginView
-    },
-    {
-      path: '/members/:id',
-      name: 'member-detail',
-      component: MemberDetailView
+      component: LoginView,
     },
   ],
-    //scrollBehavior(to, from, savedPosition) {
-    scrollBehavior() {
-    // 브라우저 뒤로가기 등은 기존 위치 유지, 그 외에는 top: 0
-    //if (savedPosition) {
-    //  return savedPosition
-    //}
+
+  scrollBehavior() {
     return { top: 0 }
   },
 })

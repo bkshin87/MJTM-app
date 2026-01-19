@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabaseClient'
 
 type Notice = {
@@ -10,8 +10,9 @@ type Notice = {
   created_at: string
 }
 
-const route = useRoute()
+const router = useRouter()
 
+// 새 글이므로 초기값만 필요
 const notice = ref<Notice | null>(null)
 const loading = ref(true)
 const errorMessage = ref('')
@@ -20,66 +21,66 @@ const errorMessage = ref('')
 const titleInput = ref('')
 const contentInput = ref('')
 
-onMounted(async () => {
-  const idParam = route.params.id
-  const id = Number(idParam)
-
-  if (Number.isNaN(id)) {
-    errorMessage.value = '잘못된 공지 번호입니다.'
-    loading.value = false
-    return
-  }
-
-  const { data, error } = await supabase
-    .from('notice')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
-
-  if (error) {
-    console.error('supabase error:', error)
-    errorMessage.value = '공지 상세를 불러오는 중 오류가 발생했습니다.'
-    loading.value = false
-    return
-  }
-
-  if (!data) {
-    errorMessage.value = '해당 공지를 찾을 수 없습니다.'
-    loading.value = false
-    return
-  }
-
-  notice.value = data as Notice
-  titleInput.value = notice.value.title
-  contentInput.value = notice.value.content
+// 초기 마운트 시 빈 폼만 준비
+onMounted(() => {
   loading.value = false
 })
 
-/*
-const goBack = () => {
-  router.back()
+// 저장 버튼
+const saveNotice = async () => {
+  if (!titleInput.value.trim()) {
+    alert('제목을 입력해 주세요.')
+    return
+  }
+
+  loading.value = true
+  errorMessage.value = ''
+
+  const { data, error } = await supabase
+    .from('notice')
+    .insert({
+      title: titleInput.value.trim(),
+      content: contentInput.value.trim(),
+    })
+    .select('*')
+    .maybeSingle()
+
+  if (error) {
+    console.error('supabase insert error:', error)
+    errorMessage.value = '공지 저장 중 오류가 발생했습니다.'
+    loading.value = false
+    return
+  }
+
+  if (data) {
+    notice.value = data as Notice
+    alert('저장되었습니다.')
+    // 저장 후 상세 페이지로 이동 (id 기준)
+    router.push({ name: 'notice-detail', params: { id: data.id } })
+  } else {
+    loading.value = false
+  }
 }
-*/
+
+// 삭제 버튼 (새 글 작성 화면에서는 비활성화하거나 목록으로 이동 정도만)
+const deleteDraft = () => {
+  // 단순히 목록으로 돌아가기
+  router.push({ name: 'notice' })
+}
 </script>
 
 <template>
   <div class="page">
     <main class="content">
-      <!--
-      <button class="back-button" @click="goBack">
-        ← 목록으로
-      </button>
-      -->
-
       <section v-if="loading" class="card">
-        <p class="info-text">공지 상세를 불러오는 중입니다...</p>
+        <p class="info-text">화면을 준비하는 중입니다...</p>
       </section>
 
       <section v-else-if="errorMessage" class="card">
         <p class="info-text">{{ errorMessage }}</p>
       </section>
 
-      <section v-else-if="notice" class="detail-wrapper">
+      <section v-else class="detail-wrapper">
         <!-- 상단: 제목 입력 영역 -->
         <section class="card header-card">
           <input
@@ -97,14 +98,20 @@ const goBack = () => {
             class="notice-content-textarea"
             placeholder="공지사항 내용을 입력하세요."
           ></textarea>
-          <p class="notice-date">
+          <!-- 새 글이니까 날짜는 안 보여줘도 되고, 필요하면 저장 후 표시 가능 -->
+          <p v-if="notice" class="notice-date">
             {{ new Date(notice.created_at).toLocaleString() }}
           </p>
         </section>
-          <div class="actions">
-            <button type="button" class="action-btn primary">저장</button>
-            <button type="button" class="action-btn danger">삭제</button>
-          </div>
+
+        <div class="actions">
+          <button type="button" class="action-btn primary" @click="saveNotice">
+            저장
+          </button>
+          <button type="button" class="action-btn danger" @click="deleteDraft">
+            취소
+          </button>
+        </div>
       </section>
     </main>
   </div>
@@ -136,18 +143,6 @@ const goBack = () => {
   margin: 0;
   font-size: 14px;
   color: #6b7280;
-}
-
-/* 뒤로가기 버튼 */
-.back-button {
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  background: #e5edff;
-  color: #1d4ed8;
-  font-weight: 500;
-  cursor: pointer;
 }
 
 /* 상세 전체 래퍼 */
@@ -233,6 +228,6 @@ const goBack = () => {
   margin: 8px 0 0;
   font-size: 12px;
   color: #9ca3af;
-  text-align: right; /* 오른쪽 정렬 */
+  text-align: right;
 }
 </style>

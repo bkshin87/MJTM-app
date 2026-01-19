@@ -2,7 +2,6 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabaseClient'
-//import MainTabs from '@/components/MainTabs.vue'
 
 type Notice = {
   id: number
@@ -67,6 +66,11 @@ function handleSearch() {
   fetchNotices()
 }
 
+// 등록 버튼 클릭 시 NoticeDetailView로 이동
+function goToNoticeDetailForCreate() {
+  router.push({ name: 'notice-write' })
+}
+
 onMounted(fetchNotices)
 
 watch(page, async () => {
@@ -78,12 +82,9 @@ watch(page, async () => {
 <template>
   <div class="page">
     <main class="content">
-      <!-- 공통 상단 탭 -->
-      <!--<MainTabs />-->
-
       <!-- 상단 제목 + 검색 -->
       <section class="section-header">
-        <!--<h2 class="section-title">공지사항</h2>-->
+        <!-- <h2 class="section-title">공지사항</h2> -->
 
         <div class="search-box-wrapper">
           <div class="search-box">
@@ -169,12 +170,12 @@ watch(page, async () => {
         </div>
       </section>
 
-      <!-- 등록 버튼 -->
+      <!-- 등록 버튼 (페이징 섹션 밖) -->
       <div class="actions">
         <button
           type="button"
           class="action-btn"
-          @click="router.push({ name: 'notice-write' })"
+          @click="goToNoticeDetailForCreate"
         >
           등록
         </button>
