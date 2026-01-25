@@ -65,12 +65,6 @@ const goBack = () => {
 <template>
   <div class="page">
     <main class="content">
-      <!--
-      <button class="back-button" @click="goBack">
-        ← 목록으로
-      </button>
-      -->
-
       <section v-if="loading" class="card">
         <p class="info-text">공지 상세를 불러오는 중입니다...</p>
       </section>
@@ -136,18 +130,6 @@ const goBack = () => {
   margin: 0;
   font-size: 14px;
   color: #6b7280;
-}
-
-/* 뒤로가기 버튼 */
-.back-button {
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 999px;
-  border: 1px solid #cbd5e1;
-  background: #e5edff;
-  color: #1d4ed8;
-  font-weight: 500;
-  cursor: pointer;
 }
 
 /* 상세 전체 래퍼 */

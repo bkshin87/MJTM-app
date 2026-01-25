@@ -61,36 +61,41 @@ const saveAlbum = async () => {
 
   album.value = row as AlbumPhoto
 
-  // 2) 파일이 있으면 첫 번째 파일을 대표 이미지로 업로드
+  // 2) 파일이 있으면 전부 업로드하고, 첫 번째 성공 파일을 대표 이미지로 사용
   if (files.value.length > 0 && album.value) {
-    const first = files.value[0]
-    if (!first) {
-      loading.value = false
-      alert('파일 선택에 문제가 있습니다.')
-      return
-    }
-
     uploading.value = true
-    const file = first
 
     try {
-      const ext = file.name.split('.').pop() || ''
-      const fileName = `${crypto.randomUUID()}.${ext}`
-      const path = `${album.value.id}/${fileName}`
+      let firstPath: string | null = null
+      let firstName: string | null = null
 
-      const { error: uploadError } = await supabase.storage
-        .from('album-photos') // 버킷 이름
-        .upload(path, file)
+      for (const file of files.value) {
+        const ext = file.name.split('.').pop() || ''
+        const fileName = `${crypto.randomUUID()}.${ext}`
+        const path = `${album.value.id}/${fileName}`
 
-      if (uploadError) {
-        console.error('upload error', uploadError)
-        errorMessage.value = '이미지 업로드 중 오류가 발생했습니다.'
-      } else {
+        const { error: uploadError } = await supabase.storage
+          .from('album-photos') // 버킷 이름
+          .upload(path, file)
+
+        if (uploadError) {
+          console.error('upload error', uploadError)
+          errorMessage.value = '이미지 업로드 중 오류가 발생했습니다.'
+          continue
+        }
+
+        if (!firstPath) {
+          firstPath = path
+          firstName = file.name
+        }
+      }
+
+      if (firstPath && firstName) {
         const { data: updated, error: updateError } = await supabase
           .from('album_photos')
           .update({
-            file_path: path,
-            file_name: file.name,
+            file_path: firstPath,
+            file_name: firstName,
           })
           .eq('id', album.value.id)
           .select('*')
@@ -181,12 +186,19 @@ const cancelWrite = () => {
             >
               {{ uploading || loading ? '저장 중...' : '저장' }}
             </button>
-            <button
+            <!-- <button
               type="button"
               class="action-btn danger"
               @click="cancelWrite"
             >
-              취소
+              목록
+            </button> -->
+            <button
+              type="button"
+              class="action-btn"
+              @click="cancelWrite"
+            >
+              목록
             </button>
           </div>
         </section>

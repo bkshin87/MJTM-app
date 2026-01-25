@@ -33,9 +33,9 @@ const contentInput = ref('')
 const typeInput = ref<'1' | '2' | ''>('')
 
 // 체크박스 상태
-const congratulatoryChecked = ref(false)      // 축하화환
-const condolenceFlowerChecked = ref(false)    // 근조화환
-const condolenceFlagChecked = ref(false)      // 근조기
+const congratulatoryChecked = ref(false)
+const condolenceFlowerChecked = ref(false)
+const condolenceFlagChecked = ref(false)
 
 // 현재 로그인 사용자
 const currentUserId = ref<string | null>(null)
@@ -43,12 +43,12 @@ const isOwner = computed(
   () =>
     !!eventItem.value &&
     !!currentUserId.value &&
-    eventItem.value.created_by === currentUserId.value
+    eventItem.value.created_by === currentUserId.value,
 )
 
 // 유형에 따른 체크박스 노출
 const showCongratulatory = computed(() => typeInput.value === '1') // 경사
-const showCondolence = computed(() => typeInput.value === '2')     // 조사
+const showCondolence = computed(() => typeInput.value === '2') // 조사
 
 onMounted(async () => {
   const { data: userData } = await supabase.auth.getUser()
@@ -63,14 +63,13 @@ onMounted(async () => {
     return
   }
 
-  // created_by(FK) → members.id, 이름 join
   const { data, error } = await supabase
     .from('events')
     .select(
       `
       *,
       members:created_by ( name )
-      `
+      `,
     )
     .eq('id', id)
     .maybeSingle()
@@ -101,7 +100,7 @@ onMounted(async () => {
   loading.value = false
 })
 
-// 저장 버튼 (제목/본문/유형 + 세 플래그 한번에 저장)
+// 저장 버튼
 const saveEvent = async () => {
   if (!eventItem.value) return
 
@@ -133,7 +132,7 @@ const saveEvent = async () => {
       `
       *,
       members:created_by ( name )
-      `
+      `,
     )
     .maybeSingle()
 
@@ -155,23 +154,17 @@ const saveEvent = async () => {
 // 체크박스 토글 시 개별 필드 업데이트
 const updateFlagField = async (
   field: 'congratulatory_flower' | 'condolence_flower' | 'condolence_flag',
-  checked: boolean
+  checked: boolean,
 ) => {
   if (!eventItem.value) return
 
   const payload: Record<string, string> = {}
   payload[field] = checked ? 'x' : ''
 
-  console.log("체크박스 업데이트 테스트 start")
-  console.log(payload)
-  console.log(eventItem.value.id)
-
   const { error } = await supabase
     .from('events')
     .update(payload)
     .eq('id', eventItem.value.id)
-
-  console.log("체크박스 업데이트 테스트 end")
 
   if (error) {
     console.error('supabase flag update error:', error)
@@ -231,7 +224,7 @@ const deleteEvent = async () => {
       </section>
 
       <section v-else-if="eventItem" class="detail-wrapper">
-        <!-- 제목 -->
+        <!-- 제목 (공지와 동일 카드/인풋) -->
         <section class="card header-card">
           <input
             v-model="titleInput"
@@ -254,14 +247,14 @@ const deleteEvent = async () => {
           </select>
         </section>
 
-        <!-- 본문 -->
+        <!-- 본문 (공지와 동일 카드/textarea + 메타) -->
         <section class="card content-card">
           <textarea
             v-model="contentInput"
             class="notice-content-textarea"
             placeholder="경조사 내용을 입력하세요."
           ></textarea>
-          <p class="notice-meta">
+          <p class="notice-date">
             {{ new Date(eventItem.created_at).toLocaleString() }}
             <span v-if="eventItem.members?.name">
               · 작성자: {{ eventItem.members.name }}
@@ -271,6 +264,11 @@ const deleteEvent = async () => {
 
         <!-- 체크박스 + 버튼 -->
         <div class="actions">
+          <div class="buttons" v-if="isOwner">
+            <button type="button" class="action-btn primary" @click="saveEvent">저장</button>
+            <button type="button" class="action-btn danger" @click="deleteEvent">삭제</button>
+          </div>
+
           <div class="checks">
             <label v-if="showCongratulatory" class="check-label">
               <input type="checkbox" v-model="congratulatoryChecked" />
@@ -286,23 +284,6 @@ const deleteEvent = async () => {
               <input type="checkbox" v-model="condolenceFlagChecked" />
               근조기
             </label>
-          </div>
-
-          <div class="buttons" v-if="isOwner">
-            <button
-              type="button"
-              class="action-btn primary"
-              @click="saveEvent"
-            >
-              저장
-            </button>
-            <button
-              type="button"
-              class="action-btn danger"
-              @click="deleteEvent"
-            >
-              삭제
-            </button>
           </div>
         </div>
       </section>
@@ -323,6 +304,7 @@ const deleteEvent = async () => {
   padding: 0 20px;
 }
 
+/* 공통 카드 스타일 (공지와 동일) */
 .card {
   background: #f3f4f6;
   border-radius: 14px;
@@ -337,10 +319,12 @@ const deleteEvent = async () => {
   color: #6b7280;
 }
 
+/* 상세 전체 래퍼 */
 .detail-wrapper {
   margin-top: 8px;
 }
 
+/* 상단 타이틀 영역 카드 */
 .header-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -359,6 +343,7 @@ const deleteEvent = async () => {
   padding: 0;
 }
 
+/* 유형 선택 줄 */
 .type-row {
   margin-top: 8px;
   display: flex;
@@ -376,6 +361,7 @@ const deleteEvent = async () => {
   color: #111827;
 }
 
+/* 본문 카드 / textarea / 날짜 (공지와 동일) */
 .content-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -399,14 +385,14 @@ const deleteEvent = async () => {
   overflow-y: auto;
 }
 
-.notice-meta {
+.notice-date {
   margin: 8px 0 0;
   font-size: 12px;
   color: #9ca3af;
   text-align: right;
 }
 
-/* 액션 영역 */
+/* 체크박스 + 버튼 영역 */
 .actions {
   margin-top: 12px;
   display: flex;

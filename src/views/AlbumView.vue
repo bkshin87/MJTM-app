@@ -37,13 +37,16 @@ async function fetchPhotos() {
 
   let query = supabase
     .from('album_photos')
-    .select('id, title, file_path, created_at', { count: 'exact' })
+    .select('id, title, file_path, created_at, description', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 
   const q = searchQuery.value.trim()
   if (q) {
-    query = query.ilike('title', `%${q}%`)
+    // 제목 OR 내용 검색
+    query = query.or(
+      `title.ilike.%${q}%,description.ilike.%${q}%`
+    ) // 여러 컬럼 ilike 는 or() 사용[web:578][web:579]
   }
 
   const { data, error, count } = await query
@@ -79,15 +82,13 @@ watch(page, async () => {
     <main class="content">
       <!-- 상단 제목 + 검색 -->
       <section class="section-header">
-        <!-- <h2 class="section-title">사진첩</h2> -->
-
         <div class="search-box-wrapper">
           <div class="search-box">
             <input
               v-model="searchQuery"
               type="text"
               class="search-input"
-              placeholder="제목 검색"
+              placeholder="제목/내용 검색"
               @keyup.enter="handleSearch"
             />
             <button class="search-button" type="button" @click="handleSearch">
@@ -112,7 +113,6 @@ watch(page, async () => {
 
       <!-- 리스트 + 페이징 -->
       <section v-else class="album-section">
-        <!-- 공지/경조사와 같은 리스트 형태 -->
         <ul class="album-list">
           <li
             v-for="photo in photos"
@@ -127,7 +127,6 @@ watch(page, async () => {
           </li>
         </ul>
 
-        <!-- 페이징 -->
         <div class="pagination">
           <button
             class="page-button"
@@ -187,14 +186,12 @@ watch(page, async () => {
   font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
 }
 
-/* Notice/Signup과 동일한 폭/여백 */
 .content {
   max-width: 980px;
   margin: 16px auto 24px;
   padding: 0 20px 16px;
 }
 
-/* 상단 제목 + 검색창 */
 .section-header {
   margin-bottom: 16px;
   display: flex;
@@ -209,7 +206,6 @@ watch(page, async () => {
   white-space: nowrap;
 }
 
-/* 검색 박스 */
 .search-box-wrapper {
   width: 100%;
   display: flex;
@@ -250,7 +246,6 @@ watch(page, async () => {
   justify-content: center;
 }
 
-/* 상태 메시지 */
 .state-section {
   padding: 40px 0;
   text-align: center;
@@ -262,13 +257,11 @@ watch(page, async () => {
   color: #6b7280;
 }
 
-/* 리스트 전체 래퍼 */
 .album-section {
   margin-top: 8px;
   padding-bottom: 8px;
 }
 
-/* 리스트 UL */
 .album-list {
   list-style: none;
   margin: 0;
@@ -276,7 +269,6 @@ watch(page, async () => {
   border-top: 1px solid #e5e7eb;
 }
 
-/* 한 줄: 제목 / 작성일자 */
 .album-row {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -298,7 +290,6 @@ watch(page, async () => {
   white-space: nowrap;
 }
 
-/* 페이징 */
 .pagination {
   display: flex;
   align-items: center;
@@ -330,7 +321,6 @@ watch(page, async () => {
   color: #9ca3af;
 }
 
-/* 버튼 영역 */
 .actions {
   margin-top: 12px;
   display: flex;
@@ -350,7 +340,6 @@ watch(page, async () => {
   cursor: pointer;
 }
 
-/* 모바일 */
 @media (max-width: 768px) {
   .content {
     padding: 0 16px 16px;
