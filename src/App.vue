@@ -129,9 +129,9 @@ const handleSignup = () => {
     <nav class="tabs">
       <RouterLink to="/about" class="tab">동문회소개</RouterLink>
       <RouterLink to="/notice" class="tab">공지사항</RouterLink>
-      <RouterLink to="/members" class="tab">동문명부</RouterLink>
-      <RouterLink to="/album" class="tab">사진첩</RouterLink>
       <RouterLink to="/event" class="tab">경조사</RouterLink>
+      <RouterLink to="/album" class="tab">사진첩</RouterLink>
+      <RouterLink to="/members" class="tab">동문명부</RouterLink>
     </nav>
 
     <!-- 페이지별 콘텐츠 -->

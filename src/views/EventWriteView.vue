@@ -3,33 +3,41 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabaseClient'
 
-type Notice = {
+type EventItem = {
   id: number
+  type: string | null      // '1' | '2' | '3' 저장
   title: string
-  content: string
+  description: string | null
+  event_date: string | null
+  location: string | null
   created_at: string
+  created_by: string | null
 }
 
 const router = useRouter()
 
-// 새 글이므로 초기값만 필요
-const notice = ref<Notice | null>(null)
+// 상태
+const eventItem = ref<EventItem | null>(null)
 const loading = ref(true)
 const errorMessage = ref('')
 
-// 입력용 상태
 const titleInput = ref('')
 const contentInput = ref('')
+const typeInput = ref<'1' | '2' | '3' | ''>('')   // 셀렉트 박스 값
 
-// 초기 마운트 시 빈 폼만 준비
 onMounted(() => {
   loading.value = false
 })
 
-// 저장 버튼
-const saveNotice = async () => {
+// 저장
+const saveEvent = async () => {
   if (!titleInput.value.trim()) {
     alert('제목을 입력해 주세요.')
+    return
+  }
+
+  if (!typeInput.value) {
+    alert('경조사 유형을 선택해 주세요.')
     return
   }
 
@@ -37,36 +45,35 @@ const saveNotice = async () => {
   errorMessage.value = ''
 
   const { data, error } = await supabase
-    .from('notice')
+    .from('events')
     .insert({
       title: titleInput.value.trim(),
-      content: contentInput.value.trim(),
+      description: contentInput.value.trim(),
+      type: typeInput.value,        // ✅ 1/2/3 저장
     })
     .select('*')
     .maybeSingle()
 
   if (error) {
     console.error('supabase insert error:', error)
-    errorMessage.value = '공지 저장 중 오류가 발생했습니다.'
+    errorMessage.value = '경조사 저장 중 오류가 발생했습니다.'
     loading.value = false
     return
   }
 
   if (data) {
-    notice.value = data as Notice
+    eventItem.value = data as EventItem
     alert('저장되었습니다.')
-    // 저장 후 상세 페이지로 이동 (id 기준)
-    //router.push({ name: 'notice-detail', params: { id: data.id } })
-    router.push({ name: 'notice' })
+    // 등록 후 리스트 첫 페이지로 이동
+    router.push({ name: 'event' })
   } else {
     loading.value = false
   }
 }
 
-// 삭제 버튼 (새 글 작성 화면에서는 비활성화하거나 목록으로 이동 정도만)
-const deleteDraft = () => {
-  // 단순히 목록으로 돌아가기
-  router.push({ name: 'notice' })
+// 취소
+const cancelWrite = () => {
+  router.push({ name: 'event' })
 }
 </script>
 
@@ -82,34 +89,47 @@ const deleteDraft = () => {
       </section>
 
       <section v-else class="detail-wrapper">
-        <!-- 상단: 제목 입력 영역 -->
+        <!-- 상단: 제목 입력 -->
         <section class="card header-card">
           <input
             v-model="titleInput"
             class="notice-title-input"
             type="text"
-            placeholder="공지사항 제목을 입력하세요."
+            placeholder="경조사 제목을 입력하세요."
           />
         </section>
 
-        <!-- 하단: 본문 입력 영역 -->
+        <!-- 제목과 본문 사이, 왼쪽에 타입 선택 박스 -->
+        <section class="type-card">
+          <!--<label class="type-label" for="event-type-select">유형</label>-->
+          <select
+            id="event-type-select"
+            v-model="typeInput"
+            class="type-select"
+          >
+            <option value="" disabled>유형을 선택하세요</option>
+            <option value="1">경사</option>
+            <option value="2">조사</option>
+          </select>
+        </section>
+
+        <!-- 하단: 본문 -->
         <section class="card content-card">
           <textarea
             v-model="contentInput"
             class="notice-content-textarea"
-            placeholder="공지사항 내용을 입력하세요."
+            placeholder="경조사 내용을 입력하세요."
           ></textarea>
-          <!-- 새 글이니까 날짜는 안 보여줘도 되고, 필요하면 저장 후 표시 가능 -->
-          <p v-if="notice" class="notice-date">
-            {{ new Date(notice.created_at).toLocaleString() }}
+          <p v-if="eventItem" class="notice-date">
+            {{ new Date(eventItem.created_at).toLocaleString() }}
           </p>
         </section>
 
         <div class="actions">
-          <button type="button" class="action-btn primary" @click="saveNotice">
+          <button type="button" class="action-btn primary" @click="saveEvent">
             저장
           </button>
-          <button type="button" class="action-btn danger" @click="deleteDraft">
+          <button type="button" class="action-btn danger" @click="cancelWrite">
             취소
           </button>
         </div>
@@ -131,7 +151,7 @@ const deleteDraft = () => {
   padding: 0 20px;
 }
 
-/* 공통 카드 스타일 */
+/* 공통 카드 */
 .card {
   background: #f3f4f6;
   border-radius: 14px;
@@ -139,19 +159,17 @@ const deleteDraft = () => {
   margin-top: 12px;
 }
 
-/* 로딩/에러 텍스트 */
 .info-text {
   margin: 0;
   font-size: 14px;
   color: #6b7280;
 }
 
-/* 상세 전체 래퍼 */
 .detail-wrapper {
   margin-top: 8px;
 }
 
-/* 상단 타이틀 영역 카드 */
+/* 제목 카드 */
 .header-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -170,7 +188,30 @@ const deleteDraft = () => {
   padding: 0;
 }
 
-/* 하단 본문 카드 */
+/* 타입 선택 카드: 제목과 본문 사이, 왼쪽 정렬 */
+.type-card {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.type-label {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.type-select {
+  min-width: 120px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 13px;
+  background: #ffffff;
+  color: #111827;
+}
+
+/* 본문 카드 */
 .content-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;
@@ -230,5 +271,16 @@ const deleteDraft = () => {
   font-size: 12px;
   color: #9ca3af;
   text-align: right;
+}
+
+/* 모바일 */
+@media (max-width: 768px) {
+  .content {
+    padding: 0 16px;
+  }
+
+  .type-card {
+    justify-content: flex-start;
+  }
 }
 </style>

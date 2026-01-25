@@ -1,117 +1,118 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { supabase } from '@/lib/supabaseClient'
 
-type Notice = {
+type AlbumPhoto = {
   id: number
   title: string
-  content: string
+  description: string | null
+  file_path: string | null
+  file_name: string | null
   created_at: string
+  created_by: string | null
 }
 
-const router = useRouter()
+const route = useRoute()
 
-// 새 글이므로 초기값만 필요
-const notice = ref<Notice | null>(null)
+const photo = ref<AlbumPhoto | null>(null)
 const loading = ref(true)
 const errorMessage = ref('')
 
 // 입력용 상태
 const titleInput = ref('')
-const contentInput = ref('')
+const descriptionInput = ref('')
 
-// 초기 마운트 시 빈 폼만 준비
-onMounted(() => {
-  loading.value = false
-})
+// 이미지 URL
+const imageUrl = ref<string | null>(null)
 
-// 저장 버튼
-const saveNotice = async () => {
-  if (!titleInput.value.trim()) {
-    alert('제목을 입력해 주세요.')
+onMounted(async () => {
+  const idParam = route.params.id
+  const id = Number(idParam)
+
+  if (Number.isNaN(id)) {
+    errorMessage.value = '잘못된 사진첩 번호입니다.'
+    loading.value = false
     return
   }
-
-  loading.value = true
-  errorMessage.value = ''
 
   const { data, error } = await supabase
-    .from('notice')
-    .insert({
-      title: titleInput.value.trim(),
-      content: contentInput.value.trim(),
-    })
+    .from('album_photos')
     .select('*')
-    .maybeSingle()
+    .eq('id', id)
+    .maybeSingle() // [web:426]
 
   if (error) {
-    console.error('supabase insert error:', error)
-    errorMessage.value = '공지 저장 중 오류가 발생했습니다.'
+    console.error('supabase error:', error)
+    errorMessage.value = '사진첩 상세를 불러오는 중 오류가 발생했습니다.'
     loading.value = false
     return
   }
 
-  if (data) {
-    notice.value = data as Notice
-    alert('저장되었습니다.')
-    // 저장 후 상세 페이지로 이동 (id 기준)
-    //router.push({ name: 'notice-detail', params: { id: data.id } })
-    router.push({ name: 'notice' })
-  } else {
+  if (!data) {
+    errorMessage.value = '해당 사진첩을 찾을 수 없습니다.'
     loading.value = false
+    return
   }
-}
 
-// 삭제 버튼 (새 글 작성 화면에서는 비활성화하거나 목록으로 이동 정도만)
-const deleteDraft = () => {
-  // 단순히 목록으로 돌아가기
-  router.push({ name: 'notice' })
-}
+  photo.value = data as AlbumPhoto
+  titleInput.value = photo.value.title
+  descriptionInput.value = photo.value.description ?? ''
+
+  if (photo.value.file_path) {
+    const { data: urlData } = supabase.storage
+      .from('album-photos')
+      .getPublicUrl(photo.value.file_path) // [web:417][web:432]
+
+    imageUrl.value = urlData.publicUrl
+  }
+
+  loading.value = false
+})
 </script>
 
 <template>
   <div class="page">
     <main class="content">
       <section v-if="loading" class="card">
-        <p class="info-text">화면을 준비하는 중입니다...</p>
+        <p class="info-text">사진첩 상세를 불러오는 중입니다...</p>
       </section>
 
       <section v-else-if="errorMessage" class="card">
         <p class="info-text">{{ errorMessage }}</p>
       </section>
 
-      <section v-else class="detail-wrapper">
+      <section v-else-if="photo" class="detail-wrapper">
         <!-- 상단: 제목 입력 영역 -->
         <section class="card header-card">
           <input
             v-model="titleInput"
             class="notice-title-input"
             type="text"
-            placeholder="공지사항 제목을 입력하세요."
+            placeholder="사진첩 제목을 입력하세요."
           />
         </section>
 
-        <!-- 하단: 본문 입력 영역 -->
+        <!-- 하단: 이미지 + 본문 입력 영역 -->
         <section class="card content-card">
+          <div v-if="imageUrl" class="image-box">
+            <img :src="imageUrl" :alt="photo.file_name || photo.title" />
+          </div>
+
           <textarea
-            v-model="contentInput"
+            v-model="descriptionInput"
             class="notice-content-textarea"
-            placeholder="공지사항 내용을 입력하세요."
+            placeholder="사진첩 내용을 입력하세요."
           ></textarea>
-          <!-- 새 글이니까 날짜는 안 보여줘도 되고, 필요하면 저장 후 표시 가능 -->
-          <p v-if="notice" class="notice-date">
-            {{ new Date(notice.created_at).toLocaleString() }}
+
+          <p class="notice-date">
+            {{ new Date(photo.created_at).toLocaleString() }}
           </p>
         </section>
 
         <div class="actions">
-          <button type="button" class="action-btn primary" @click="saveNotice">
-            저장
-          </button>
-          <button type="button" class="action-btn danger" @click="deleteDraft">
-            취소
-          </button>
+          <button type="button" class="action-btn primary">저장</button>
+          <button type="button" class="action-btn danger">삭제</button>
         </div>
       </section>
     </main>
@@ -180,6 +181,22 @@ const deleteDraft = () => {
   display: flex;
   flex-direction: column;
   padding: 16px 18px;
+  gap: 8px;
+}
+
+/* 이미지 박스 */
+.image-box {
+  width: 100%;
+  max-height: 260px;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.image-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .notice-content-textarea {

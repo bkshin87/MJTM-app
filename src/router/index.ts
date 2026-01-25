@@ -24,6 +24,7 @@ const router = createRouter({
       name: 'home',
       component: HomeView,
     },
+
     {
       path: '/about',
       name: 'about',
@@ -55,12 +56,34 @@ const router = createRouter({
       name: 'event',
       component: EventView,
     },
+    // 경조사 상세 (id로 조회)
+    {
+      path: '/events/:id',
+      name: 'event-detail',
+      component: () => import('@/views/EventDetailView.vue'),
+    },
+    // 경조사 작성 (새 글 작성용)
+    {
+      path: '/events/write',
+      name: 'event-write',
+      component: () => import('@/views/EventWriteView.vue'),
+    },
 
     // 사진첩
     {
       path: '/album',
       name: 'album',
       component: AlbumView,
+    },
+    {
+      path: '/album/:id',
+      name: 'album-detail',
+      component: () => import('@/views/AlbumDetailView.vue'),
+    },
+    {
+      path: '/album/write',
+      name: 'album-write',
+      component: () => import('@/views/AlbumWriteView.vue'),
     },
 
     // 동문명부 목록
@@ -76,12 +99,13 @@ const router = createRouter({
       component: MemberDetailView,
     },
 
-    // 회원가입 / 로그인
+    // 회원가입
     {
       path: '/signup',
       name: 'signup',
       component: SignUpView,
     },
+    // 로그인
     {
       path: '/login',
       name: 'login',

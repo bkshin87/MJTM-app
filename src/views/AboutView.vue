@@ -7,6 +7,7 @@
     <main class="content">
       <!-- 공통 상단 탭 -->
       <!--<MainTabs />-->
+       동문회를 소개합니다.
     </main>
   </div>
 </template>

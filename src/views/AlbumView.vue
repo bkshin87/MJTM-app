@@ -2,10 +2,12 @@
 import { onMounted, ref, watch } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'vue-router'
+
 type Photo = {
   id: number
   title: string
-  image_path: string
+  file_path: string | null
+  fiel_name: string | null
   created_at: string
 }
 
@@ -33,11 +35,11 @@ async function fetchPhotos() {
   const from = (page.value - 1) * pageSize
   const to = from + pageSize - 1
 
-let query = supabase
-  .from('album_photos')  // 🔹 실제 테이블명
-  .select('id, title, image_path, created_at', { count: 'exact' })
-  .order('created_at', { ascending: false })
-  .range(from, to)
+  let query = supabase
+    .from('album_photos')
+    .select('id, title, file_path, created_at', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to)
 
   const q = searchQuery.value.trim()
   if (q) {
@@ -75,9 +77,9 @@ watch(page, async () => {
 <template>
   <div class="page">
     <main class="content">
-      <!-- 상단 제목 + 검색 (공지사항과 동일 구조) -->
+      <!-- 상단 제목 + 검색 -->
       <section class="section-header">
-        <!--<h2 class="section-title">사진첩</h2>-->
+        <!-- <h2 class="section-title">사진첩</h2> -->
 
         <div class="search-box-wrapper">
           <div class="search-box">
@@ -108,23 +110,24 @@ watch(page, async () => {
         <p class="state-text">검색 조건에 맞는 사진이 없습니다.</p>
       </section>
 
-      <!-- 사진 리스트 + 페이징 -->
+      <!-- 리스트 + 페이징 -->
       <section v-else class="album-section">
-        <!-- 사진 그리드 (기존 그대로) -->
-        <section class="gallery">
-          <article
+        <!-- 공지/경조사와 같은 리스트 형태 -->
+        <ul class="album-list">
+          <li
             v-for="photo in photos"
             :key="photo.id"
-            class="photo-card"
+            class="album-row"
+            @click="router.push({ name: 'album-detail', params: { id: photo.id } })"
           >
-            <img :src="photo.image_path" :alt="photo.title" class="photo-img" />
-            <div class="photo-info">
-              <p class="photo-title">{{ photo.title }}</p>
-            </div>
-          </article>
-        </section>
+            <span class="album-title">{{ photo.title }}</span>
+            <span class="album-date">
+              {{ new Date(photo.created_at).toLocaleDateString('ko-KR') }}
+            </span>
+          </li>
+        </ul>
 
-        <!-- 페이징 (공지사항과 동일 스타일) -->
+        <!-- 페이징 -->
         <div class="pagination">
           <button
             class="page-button"
@@ -161,12 +164,13 @@ watch(page, async () => {
           </button>
         </div>
       </section>
+
       <!-- 등록 버튼 -->
       <div class="actions">
         <button
           type="button"
           class="action-btn"
-          @click="router.push({ name: 'notice-write' })"
+          @click="router.push({ name: 'album-write' })"
         >
           등록
         </button>
@@ -190,7 +194,7 @@ watch(page, async () => {
   padding: 0 20px 16px;
 }
 
-/* 상단 제목 + 검색창 (공지사항과 동일) */
+/* 상단 제목 + 검색창 */
 .section-header {
   margin-bottom: 16px;
   display: flex;
@@ -205,7 +209,7 @@ watch(page, async () => {
   white-space: nowrap;
 }
 
-/* 검색 박스: 제목 아래, 오른쪽 정렬 */
+/* 검색 박스 */
 .search-box-wrapper {
   width: 100%;
   display: flex;
@@ -220,13 +224,13 @@ watch(page, async () => {
   border: 1px solid #cbd5e1;
   background: #ffffff;
   max-width: 360px;
-  max-height : 28px;
+  max-height: 28px;
   width: 60%;
 }
 
 .search-input {
-  flex: 1 1 auto;       /* ✅ 폭 줄어들 때 같이 줄어들도록 */
-  min-width: 0;         /* ✅ flex 아이템이 실제로 줄어들 수 있게 */
+  flex: 1 1 auto;
+  min-width: 0;
   height: 40px;
   padding: 0 14px;
   border: none;
@@ -264,43 +268,37 @@ watch(page, async () => {
   padding-bottom: 8px;
 }
 
-/* 사진 그리드 (기존 유지) */
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-/* 개별 사진 카드 */
-.photo-card {
-  background: #ffffff;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
-  display: flex;
-  flex-direction: column;
-}
-
-.photo-img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  display: block;
-}
-
-.photo-info {
-  padding: 8px 10px;
-}
-
-.photo-title {
+/* 리스트 UL */
+.album-list {
+  list-style: none;
   margin: 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
+  padding: 0;
+  border-top: 1px solid #e5e7eb;
 }
 
-/* 공지와 같은 페이징 스타일 */
+/* 한 줄: 제목 / 작성일자 */
+.album-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 16px;
+  align-items: center;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+}
+
+.album-title {
+  font-size: 13px;
+  color: #111827;
+}
+
+.album-date {
+  font-size: 13px;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* 페이징 */
 .pagination {
   display: flex;
   align-items: center;
@@ -360,6 +358,11 @@ watch(page, async () => {
 
   .search-box {
     width: 100%;
+  }
+
+  .album-row {
+    grid-template-columns: 1fr auto;
+    row-gap: 4px;
   }
 }
 </style>
