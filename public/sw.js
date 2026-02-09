@@ -1,28 +1,50 @@
 // public/sw.js
 
+// 로그 저장 함수
+function logToStorage(message) {
+  const timestamp = new Date().toLocaleTimeString()
+  const log = `${timestamp}: ${message}`
+  console.log('[SW]', message)
+
+  // localStorage에 로그 저장
+  try {
+    const logs = localStorage.getItem('sw_logs') || ''
+    localStorage.setItem('sw_logs', logs + log + '\n')
+  } catch (e) {
+    console.error('[SW] localStorage error:', e)
+  }
+}
+
 self.addEventListener('install', (event) => {
-  console.log('[SW] installed')
+  logToStorage('installed')
   self.skipWaiting?.()
 })
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] activated')
+  logToStorage('activated')
   self.clients?.claim?.()
 })
 
 // ✅ 더 강력한 push 이벤트 핸들러
 self.addEventListener('push', (event) => {
-  console.log('[SW] push event received')
-  console.log('[SW] event.data:', event.data)
+  logToStorage('push event received')
+  logToStorage(`event.data: ${event.data ? 'exists' : 'null'}`)
 
   if (!event.data) {
-    console.log('[SW] no push data, showing default notification')
+    logToStorage('no push data, showing default notification')
     // 데이터가 없으면 기본 알림 띄우기
     event.waitUntil(
-      self.registration.showNotification('새로운 소식', {
-        body: '새 경조사가 등록되었습니다.',
-        icon: '/images/home-logo.png',
-      }),
+      self.registration
+        .showNotification('새로운 소식', {
+          body: '새 경조사가 등록되었습니다.',
+          icon: '/images/home-logo.png',
+        })
+        .then(() => {
+          logToStorage('default notification shown successfully')
+        })
+        .catch((err) => {
+          logToStorage(`default notification failed: ${err.message}`)
+        }),
     )
     return
   }
@@ -35,14 +57,18 @@ self.addEventListener('push', (event) => {
 
   try {
     const jsonData = event.data.json()
-    console.log('[SW] parsed json:', jsonData)
+    logToStorage(`parsed json: ${JSON.stringify(jsonData)}`)
     notificationData = { ...notificationData, ...jsonData }
   } catch (e) {
-    console.log('[SW] json parse failed, using text:', event.data.text())
-    notificationData.body = event.data.text()
+    logToStorage(`json parse failed: ${e.message}`)
+    try {
+      notificationData.body = event.data.text()
+    } catch (textErr) {
+      logToStorage(`text parse also failed: ${textErr.message}`)
+    }
   }
 
-  console.log('[SW] showing notification with data:', notificationData)
+  logToStorage(`showing notification: ${notificationData.title}`)
 
   event.waitUntil(
     self.registration
@@ -54,17 +80,17 @@ self.addEventListener('push', (event) => {
         requireInteraction: false,
       })
       .then(() => {
-        console.log('[SW] notification shown successfully')
+        logToStorage('notification shown successfully')
       })
       .catch((err) => {
-        console.error('[SW] notification failed:', err)
+        logToStorage(`notification failed: ${err.message}`)
       }),
   )
 })
 
 // 알림 클릭 시 이벤트 페이지로 이동
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] notification clicked')
+  logToStorage('notification clicked')
   event.notification.close()
 
   event.waitUntil(
@@ -82,7 +108,7 @@ self.addEventListener('notificationclick', (event) => {
         }
       })
       .catch((err) => {
-        console.error('[SW] notificationclick error:', err)
+        logToStorage(`notificationclick error: ${err.message}`)
       }),
   )
 })
