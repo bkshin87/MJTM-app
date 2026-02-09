@@ -98,14 +98,48 @@ const showToast = (message: string, duration = 2000) => {
   }, duration)
 }
 
+// 🔐 로그아웃
 const handleLogout = async () => {
-  const { error } = await supabase.auth.signOut()
-  if (error) {
-    console.error(error)
-    return
+  try {
+    // 현재 세션 확인
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      console.warn('[LOGOUT] no session, skipping signOut')
+      showToast('이미 로그아웃된 상태입니다.')
+      await router.push({ name: 'login' })
+      return
+    }
+
+    // local scope 로 로그아웃 (서버 403은 무시하도록 직접 처리)
+    const { error } = await supabase.auth.signOut({
+      scope: 'local',
+    })
+
+    if (error) {
+      // 최신 버전에서는 403 을 무시하게 패치되었지만, 일부 버전에서는 그대로 던지기도 함[web:71][web:75][web:78]
+      console.error('[LOGOUT] signOut error', error)
+      // session_not_found / forbidden 류는 그냥 무시하고 클라이언트 세션만 정리
+      if (error.message && /session/i.test(error.message)) {
+        console.warn('[LOGOUT] ignoring session error and clearing local state')
+      } else {
+        showToast('로그아웃 중 오류가 발생했습니다.')
+        return
+      }
+    }
+
+    // 로컬 상태 정리
+    isLoggedIn.value = false
+    displayName.value = ''
+
+    showToast('로그아웃되었습니다.')
+    await router.push({ name: 'login' })
+  } catch (e) {
+    console.error('[LOGOUT] unexpected error', e)
+    showToast('로그아웃 중 오류가 발생했습니다.')
   }
-  showToast('로그아웃되었습니다.')
-  router.push({ name: 'login' })
 }
 
 // ---- Web Push 등록 유틸 ----
