@@ -1,4 +1,4 @@
-<script setup lang="ts">
+f<script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'vue-router'
@@ -7,7 +7,7 @@ type Photo = {
   id: number
   title: string
   file_path: string | null
-  fiel_name: string | null
+  fiel_name?: string | null
   created_at: string
 }
 
@@ -37,7 +37,7 @@ async function fetchPhotos() {
 
   let query = supabase
     .from('album_photos')
-    .select('id, title, file_path, created_at, description', { count: 'exact' })
+    .select('id, title, file_path, file_name, created_at, description', { count: 'exact' })
     .order('created_at', { ascending: false })
     .range(from, to)
 

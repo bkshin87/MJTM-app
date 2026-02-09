@@ -5,10 +5,13 @@ import { supabase } from '@/lib/supabaseClient'
 import { canInstallPwa, deferredPromptEvent, setDeferredPrompt } from '@/pwaInstall'
 
 const router = useRouter()
+
 const isLoggedIn = ref(false)
 const displayName = ref('')
 const toastMessage = ref('')
 const toastVisible = ref(false)
+const checkingSession = ref(true)
+
 const canInstall = computed(() => canInstallPwa.value)
 
 const installApp = async () => {
@@ -38,23 +41,40 @@ const loadProfile = async (userId: string) => {
   displayName.value = data?.name || ''
 }
 
+// 초기 세션 체크 + 첫 화면 분기
 onMounted(async () => {
-  const { data } = await supabase.auth.getSession()
-  const session = data.session
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
   isLoggedIn.value = !!session
 
   if (session?.user) {
     await loadProfile(session.user.id)
+    // 이미 로그인 상태인데 /login 이면 메인으로
+    if (router.currentRoute.value.name === 'login') {
+      await router.replace({ name: 'home' })
+    }
+  } else {
+    displayName.value = ''
+    // 비로그인인데 public 이 아닌 페이지면 로그인으로
+    const cur = router.currentRoute.value
+    if (!cur.meta?.public && cur.name !== 'login') {
+      await router.replace({ name: 'login' })
+    }
   }
 
-  supabase.auth.onAuthStateChange((_event, session) => {
+  // 이후 로그인/로그아웃 상태 변경 감지
+  supabase.auth.onAuthStateChange(async (_event, session) => {
     isLoggedIn.value = !!session
     if (session?.user) {
-      loadProfile(session.user.id)
+      await loadProfile(session.user.id)
     } else {
       displayName.value = ''
     }
   })
+
+  checkingSession.value = false
 })
 
 const showToast = (message: string, duration = 2000) => {
@@ -75,15 +95,109 @@ const handleLogout = async () => {
     return
   }
   showToast('로그아웃되었습니다.')
-  router.push({ name: 'home' })
-}
-
-const handleLogin = () => {
   router.push({ name: 'login' })
 }
 
-const handleSignup = () => {
-  router.push({ name: 'signup' })
+// ---- Web Push 등록 유틸 ----
+const urlBase64ToUint8Array = (base64String: string) => {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/')
+
+  const rawData = window.atob(base64)
+  const outputArray = new Uint8Array(rawData.length)
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i)
+  }
+  return outputArray
+}
+
+// 🔔 알림 허용 버튼에서 호출
+const registerPush = async () => {
+  try {
+    console.log('[PUSH] start')
+
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      alert('이 브라우저에서는 푸시 알림을 지원하지 않습니다.')
+      return
+    }
+
+    const permission = await Notification.requestPermission()
+    console.log('[PUSH] permission', permission)
+    if (permission !== 'granted') {
+      alert('알림 권한이 허용되지 않았습니다.')
+      return
+    }
+
+    // 1) Service Worker 등록
+    await navigator.serviceWorker.register('/sw.js')
+    console.log('[PUSH] sw registered')
+
+    // 2) active 상태가 될 때까지 기다렸다가 registration 사용
+    const reg = await navigator.serviceWorker.ready
+    console.log('[PUSH] sw ready', reg)
+
+    // 기존 구독 있으면 재사용
+    let subscription = await reg.pushManager.getSubscription()
+    console.log('[PUSH] existing subscription', subscription)
+
+    if (!subscription) {
+      const applicationServerKey = urlBase64ToUint8Array(
+        'BFj54ewp0yTATJuoII21sJgeSh9B0ikWCPr3IHMujO2RtQKXqrGNq0P-Cx9-Dn4B0Iu2pVSYOhH3Uk-PNF2oQhc',
+      )
+      console.log('[PUSH] subscribing...')
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      })
+      console.log('[PUSH] subscribed', subscription)
+    }
+
+    const subJson = subscription.toJSON()
+    console.log('[PUSH] sub json', subJson)
+
+    const endpoint = subscription.endpoint
+    const p256dh = subJson.keys?.p256dh
+    const auth = subJson.keys?.auth
+
+    if (!p256dh || !auth) {
+      console.error('[PUSH] missing keys', subJson)
+      alert('푸시 구독 정보를 가져오지 못했습니다.')
+      return
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    console.log('[PUSH] session', session)
+
+    if (!session?.user) {
+      alert('로그인 후 알림을 등록할 수 있습니다.')
+      return
+    }
+
+    console.log('[PUSH] inserting to supabase...')
+    const { error } = await supabase.from('push_subscriptions').insert({
+      user_id: session.user.id,
+      endpoint,
+      p256dh,
+      auth,
+    })
+
+    if (error) {
+      console.error('[PUSH] insert error', error)
+      alert('알림 등록 중 오류가 발생했습니다.')
+      return
+    }
+
+    console.log('[PUSH] done')
+    alert('알림이 등록되었습니다.')
+  } catch (e) {
+    console.error('registerPush error', e)
+    alert('알림 등록 중 오류가 발생했습니다.')
+  }
 }
 </script>
 
@@ -102,14 +216,7 @@ const handleSignup = () => {
           </RouterLink>
 
           <div class="auth-area">
-            <template v-if="!isLoggedIn">
-              <button class="auth-btn" @click="handleLogin">로그인</button>
-              <button class="auth-btn primary" @click="handleSignup">
-                회원가입
-              </button>
-            </template>
-
-            <template v-else>
+            <template v-if="isLoggedIn">
               <span class="user-name">{{ displayName || '회원' }} 님</span>
               <button class="auth-btn primary" @click="handleLogout">
                 로그아웃
@@ -118,7 +225,6 @@ const handleSignup = () => {
           </div>
         </div>
 
-        <!-- 헤더 아래 텍스트 -->
         <div class="header-bottom-row">
           <span class="logo-subtitle">토목공학과 총동문회</span>
         </div>
@@ -136,7 +242,8 @@ const handleSignup = () => {
 
     <!-- 페이지별 콘텐츠 -->
     <main class="main">
-      <RouterView />
+      <div v-if="checkingSession" class="loading">로딩 중...</div>
+      <RouterView v-else />
     </main>
 
     <!-- 전역 푸터 -->
@@ -149,18 +256,22 @@ const handleSignup = () => {
           <span>MAIL : MAIL@MAIL.COM</span>
         </div>
 
-        <!-- 앱 다운로드 버튼 -->
         <div class="footer-app-download">
-          <!--<button v-if="canInstall" @click="installApp" type="button" class="app-download-btn">-->
-            <button @click="installApp" type="button" class="app-download-btn">
-            <!--앱 다운로드 (iOS / Android)-->
+          <button @click="installApp" type="button" class="app-download-btn">
             다운로드
+          </button>
+          <button
+            @click="registerPush"
+            type="button"
+            class="app-download-btn"
+          >
+            알림 허용
           </button>
         </div>
       </div>
     </footer>
 
-    <!-- 로그아웃 토스트 -->
+    <!-- 토스트 -->
     <div v-if="toastVisible" class="toast">
       {{ toastMessage }}
     </div>
@@ -175,10 +286,9 @@ const handleSignup = () => {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     sans-serif;
   display: flex;
-  flex-direction: column; /* 헤더-메인-푸터 수직 배치 */
+  flex-direction: column;
 }
 
-/* 상단 헤더 */
 .global-header {
   background-color: #ffffff;
   border-bottom: 1px solid #e5e7eb;
@@ -193,14 +303,12 @@ const handleSignup = () => {
   gap: 8px;
 }
 
-/* 1행: 로고와 버튼 한 줄 */
 .header-top-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-/* 2행: 로고 아래 텍스트 */
 .header-bottom-row {
 }
 
@@ -214,7 +322,6 @@ const handleSignup = () => {
   width: 150px;
 }
 
-/* 로고 아래 “토목공학과 총동문회” */
 .logo-subtitle {
   margin-top: 6px;
   font-size: 17px;
@@ -222,7 +329,6 @@ const handleSignup = () => {
   color: #111827;
 }
 
-/* 우측 로그인/회원가입 영역 */
 .auth-area {
   display: flex;
   align-items: center;
@@ -234,7 +340,6 @@ const handleSignup = () => {
   color: #4b5563;
 }
 
-/* 버튼 스타일 */
 .auth-btn {
   min-width: 58px;
   padding: 4px 10px;
@@ -253,21 +358,16 @@ const handleSignup = () => {
   color: #ffffff;
 }
 
-/* 탭 메뉴 – 헤더보다 살짝 가는 굵기 */
 .tabs {
   display: flex;
   justify-content: flex-start;
   gap: 26px;
   padding-top: 12px;
-
-
-
   width: 100%;
   max-width: 980px;
   margin: 0 auto;
   padding-left: 14px;
   padding-right: 14px;
-
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
@@ -292,13 +392,18 @@ const handleSignup = () => {
   border-bottom: 3px solid #0b3b7a;
 }
 
-/* 메인 영역: 남는 공간을 채워서 footer를 항상 아래로 */
 .main {
   flex: 1;
   padding: 0;
 }
 
-/* 푸터 */
+.loading {
+  padding: 40px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
 .footer {
   background-color: #f3f4f6;
   border-top: 1px solid #e5e7eb;
@@ -311,17 +416,17 @@ const handleSignup = () => {
   text-align: left;
   font-size: 11px;
   color: #6b7280;
-  position: relative; /* 자식 버튼을 오른쪽 아래에 붙이기 위해 */
+  position: relative;
 }
 
-/* 앱 다운로드 버튼 영역 */
 .footer-app-download {
   position: absolute;
   right: 20px;
   bottom: 14px;
+  display: flex;
+  gap: 8px;
 }
 
-/* 버튼 스타일 */
 .app-download-btn {
   padding: 6px 12px;
   border-radius: 999px;
@@ -350,7 +455,6 @@ const handleSignup = () => {
   white-space: nowrap;
 }
 
-/* 토스트 */
 .toast {
   position: fixed;
   right: 16px;

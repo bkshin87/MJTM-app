@@ -5,6 +5,8 @@ import { setDeferredPrompt } from './pwaInstall'
 
 declare global {
   interface BeforeInstallPromptEvent extends Event {
+    readonly platforms?: string[]
+    readonly userChoice?: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
     prompt: () => Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
   }
 }
@@ -21,5 +23,7 @@ window.addEventListener('appinstalled', () => {
 })
 
 const app = createApp(App)
+
 app.use(router)
+
 app.mount('#app')

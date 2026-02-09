@@ -62,13 +62,35 @@ const saveEvent = async () => {
   }
 
   if (data) {
-    eventItem.value = data as EventItem
-    alert('저장되었습니다.')
-    // 등록 후 리스트 첫 페이지로 이동
-    router.push({ name: 'event' })
-  } else {
-    loading.value = false
+  eventItem.value = data as EventItem
+
+  try {
+    // ✅ 직접 URL 구성 (rest/v1 제거)
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+    await fetch(`${supabaseUrl}/functions/v1/notify-event-created`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${anonKey}`,
+      },
+      body: JSON.stringify({
+        title: `경조사 : ${titleInput.value.trim()}`,
+        eventId: data.id,
+      }),
+    })
+  } catch (e) {
+    console.error('notify-event-created call error', e)
   }
+
+  alert('저장되었습니다.')
+  router.push({ name: 'event' })
+} else {
+  loading.value = false
+}
+
 }
 
 // 취소

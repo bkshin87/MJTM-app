@@ -20,7 +20,6 @@ const handleLogin = async () => {
 
   loading.value = true
 
-  // const { data, error } = await supabase.auth.signInWithPassword({
   const { error } = await supabase.auth.signInWithPassword({
     email: email.value,
     password: password.value,
@@ -39,6 +38,15 @@ const handleLogin = async () => {
 
   alert('환영합니다.')
   router.push({ name: 'home' })
+}
+
+// 아직 페이지 없음: 비어 있는 함수만
+const handleFindAccount = () => {
+  // TODO: 아이디/비밀번호 찾기 페이지 제작 후 라우팅 추가
+}
+
+const goSignup = () => {
+  router.push({ name: 'signup' })
 }
 </script>
 
@@ -74,6 +82,24 @@ const handleLogin = async () => {
           <button class="submit-btn" type="submit" :disabled="loading">
             {{ loading ? '로그인 중...' : '로그인' }}
           </button>
+
+          <!-- 하단 링크 영역 -->
+          <div class="link-row">
+            <button
+              type="button"
+              class="text-link"
+              @click="handleFindAccount"
+            >
+              아이디/비밀번호찾기
+            </button>
+            <button
+              type="button"
+              class="text-link"
+              @click="goSignup"
+            >
+              회원가입
+            </button>
+          </div>
         </form>
       </section>
     </main>
@@ -88,14 +114,12 @@ const handleLogin = async () => {
   font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
 }
 
-/* 전체 레이아웃: 상단 헤더/탭 아래로 여백 주고 왼쪽 정렬 */
 .content {
   max-width: 980px;
   margin: 24px auto 0;
   padding: 0 20px;
 }
 
-/* 로그인 섹션 */
 .login-section {
   margin-top: 16px;
 }
@@ -107,7 +131,6 @@ const handleLogin = async () => {
   color: #111827;
 }
 
-/* 폼 레이아웃 */
 .form {
   display: flex;
   flex-direction: column;
@@ -126,7 +149,6 @@ const handleLogin = async () => {
   color: #111827;
 }
 
-/* 인풋: 흰 배경, 연한 회색 보더, 둥근 모서리 */
 .input {
   height: 44px;
   padding: 0 14px;
@@ -142,14 +164,12 @@ const handleLogin = async () => {
   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
 }
 
-/* 에러 메시지 */
 .error {
   margin: 0;
   font-size: 13px;
   color: #b91c1c;
 }
 
-/* 로그인 버튼: 진한 남색 긴 pill, 왼쪽 여백 없이 전체 폭 */
 .submit-btn {
   margin-top: 12px;
   width: 100%;
@@ -168,7 +188,28 @@ const handleLogin = async () => {
   cursor: default;
 }
 
-/* 모바일 약간 여백 조정 */
+/* 로그인 버튼 아래 링크 2개 */
+.link-row {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.text-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 13px;
+  color: #4b5563;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  color: #111827;
+}
+
 @media (max-width: 768px) {
   .content {
     padding: 0 16px;
