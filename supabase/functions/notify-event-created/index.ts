@@ -3,6 +3,8 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
+import webpush from 'npm:web-push@3.6.7'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
@@ -19,6 +21,16 @@ serve(async (req) => {
     const { title, eventId } = await req.json()
 
     console.log('notify-event-created called', { title, eventId })
+
+    // web-push VAPID 설정
+    const publicVAPID = Deno.env.get('VAPID_PUBLIC_KEY')!
+    const privateVAPID = Deno.env.get('VAPID_PRIVATE_KEY')!
+
+    webpush.setVapidDetails(
+      'mailto:admin@mjcivil.com',
+      publicVAPID,
+      privateVAPID,
+    )
 
     // Supabase Service Client 생성
     const supabaseUrl = Deno.env.get('PUBLIC_URL')!
@@ -48,44 +60,51 @@ serve(async (req) => {
     // 각 구독에 Web Push 발송
     const pushPromises = subscriptions.map(async (sub) => {
       try {
-        const payload = JSON.stringify({
-          title: title || '새로운 경조사',
-          body: `새로운 경조사가 등록되었습니다. (ID: ${eventId})`,
-          icon: '/images/home-logo.png',
-        })
-
-        console.log(`[PUSH] sending to ${sub.user_id}`, payload)
-
-        // 간단한 HTTP POST로 Web Push 서버에 전송
-        const response = await fetch(sub.endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'TTL': '86400',
+        const subscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
           },
-          body: payload,
+        }
+
+        const payload = JSON.stringify({
+          title: '새로운 경조사',
+          body: '경조사가 등록되었습니다.',
         })
 
-        console.log(
-          `[PUSH] response status for ${sub.user_id}: ${response.status}`,
-        )
+        console.log(`[PUSH] attempting ${sub.user_id}`)
+        console.log(`[PUSH] endpoint type: ${sub.endpoint}`)
 
-        if (response.ok || response.status === 201) {
-          console.log(`[PUSH] sent to ${sub.user_id}`)
+        try {
+          // web-push 라이브러리로 시도
+          await webpush.sendNotification(subscription, payload)
+          console.log(`[PUSH] ✓ sent to ${sub.user_id}`)
           return { success: true, user_id: sub.user_id }
-        } else {
-          const errText = await response.text().catch(() => '')
+        } catch (webpushErr) {
           console.error(
-            `[PUSH] failed for ${sub.user_id}: ${response.status} - ${errText}`,
+            `[PUSH] webpush failed for ${sub.user_id}: ${webpushErr.message}`,
           )
-          return {
-            success: false,
-            user_id: sub.user_id,
-            error: `HTTP ${response.status}`,
+
+          // webpush 실패 시, 단순 HTTP POST로 재시도 (일부 서비스용)
+          console.log(`[PUSH] retrying with simple POST for ${sub.user_id}`)
+          const response = await fetch(sub.endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: payload,
+          })
+
+          if (response.ok) {
+            console.log(`[PUSH] ✓ simple POST sent to ${sub.user_id}`)
+            return { success: true, user_id: sub.user_id }
+          } else {
+            throw new Error(`HTTP ${response.status}`)
           }
         }
       } catch (err) {
-        console.error(`[PUSH] error for ${sub.user_id}:`, err.message)
+        console.error(`[PUSH] ✗ failed for ${sub.user_id}: ${err.message}`)
         return {
           success: false,
           user_id: sub.user_id,
@@ -97,21 +116,20 @@ serve(async (req) => {
     const results = await Promise.all(pushPromises)
     const successCount = results.filter((r) => r.success).length
 
-    console.log(`[PUSH] summary: ${successCount}/${results.length} sent`)
+    console.log(`[PUSH] final: ${successCount}/${results.length} sent`)
 
     return new Response(
       JSON.stringify({
         success: true,
         sent: successCount,
         total: results.length,
-        results,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     )
   } catch (err) {
-    console.error('notify-event-created error', err)
+    console.error('notify-event-created error', err.message || err)
 
     return new Response(
       JSON.stringify({
