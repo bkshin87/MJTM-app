@@ -1,38 +1,45 @@
 // public/sw.js
 
-// 로그 저장 함수
-function logToStorage(message) {
+// 로그 저장 함수 (서비스워커는 localStorage 사용 불가)
+function logToClients(message) {
   const timestamp = new Date().toLocaleTimeString()
   const log = `${timestamp}: ${message}`
-  console.log('[SW]', message)
 
-  // localStorage에 로그 저장
-  try {
-    const logs = localStorage.getItem('sw_logs') || ''
-    localStorage.setItem('sw_logs', logs + log + '\n')
-  } catch (e) {
-    console.error('[SW] localStorage error:', e)
-  }
+  console.log('[SW]', log)
+
+  // 클라이언트 페이지로 로그 전달 (원하면 거기서 localStorage에 저장)
+  self.clients
+    ?.matchAll({ type: 'window', includeUncontrolled: true })
+    .then((clientList) => {
+      clientList.forEach((client) => {
+        client.postMessage({
+          type: 'SW_LOG',
+          message: log,
+        })
+      })
+    })
+    .catch((err) => {
+      console.error('[SW] postMessage error:', err)
+    })
 }
 
 self.addEventListener('install', (event) => {
-  logToStorage('installed')
+  logToClients('installed')
   self.skipWaiting?.()
 })
 
 self.addEventListener('activate', (event) => {
-  logToStorage('activated')
+  logToClients('activated')
   self.clients?.claim?.()
 })
 
-// ✅ 더 강력한 push 이벤트 핸들러
+// push 이벤트
 self.addEventListener('push', (event) => {
-  logToStorage('push event received')
-  logToStorage(`event.data: ${event.data ? 'exists' : 'null'}`)
+  logToClients('push event received')
+  logToClients(`event.data: ${event.data ? 'exists' : 'null'}`)
 
   if (!event.data) {
-    logToStorage('no push data, showing default notification')
-    // 데이터가 없으면 기본 알림 띄우기
+    logToClients('no push data, showing default notification')
     event.waitUntil(
       self.registration
         .showNotification('새로운 소식', {
@@ -40,10 +47,10 @@ self.addEventListener('push', (event) => {
           icon: '/images/home-logo.png',
         })
         .then(() => {
-          logToStorage('default notification shown successfully')
+          logToClients('default notification shown successfully')
         })
         .catch((err) => {
-          logToStorage(`default notification failed: ${err.message}`)
+          logToClients(`default notification failed: ${err.message}`)
         }),
     )
     return
@@ -57,18 +64,18 @@ self.addEventListener('push', (event) => {
 
   try {
     const jsonData = event.data.json()
-    logToStorage(`parsed json: ${JSON.stringify(jsonData)}`)
+    logToClients(`parsed json: ${JSON.stringify(jsonData)}`)
     notificationData = { ...notificationData, ...jsonData }
   } catch (e) {
-    logToStorage(`json parse failed: ${e.message}`)
+    logToClients(`json parse failed: ${e.message}`)
     try {
       notificationData.body = event.data.text()
     } catch (textErr) {
-      logToStorage(`text parse also failed: ${textErr.message}`)
+      logToClients(`text parse also failed: ${textErr.message}`)
     }
   }
 
-  logToStorage(`showing notification: ${notificationData.title}`)
+  logToClients(`showing notification: ${notificationData.title}`)
 
   event.waitUntil(
     self.registration
@@ -80,22 +87,22 @@ self.addEventListener('push', (event) => {
         requireInteraction: false,
       })
       .then(() => {
-        logToStorage('notification shown successfully')
+        logToClients('notification shown successfully')
       })
       .catch((err) => {
-        logToStorage(`notification failed: ${err.message}`)
+        logToClients(`notification failed: ${err.message}`)
       }),
   )
 })
 
 // 알림 클릭 시 이벤트 페이지로 이동
 self.addEventListener('notificationclick', (event) => {
-  logToStorage('notification clicked')
+  logToClients('notification clicked')
   event.notification.close()
 
   event.waitUntil(
     clients
-      .matchAll({ type: 'window' })
+      .matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
           if ('focus' in client) {
@@ -108,7 +115,7 @@ self.addEventListener('notificationclick', (event) => {
         }
       })
       .catch((err) => {
-        logToStorage(`notificationclick error: ${err.message}`)
+        logToClients(`notificationclick error: ${err.message}`)
       }),
   )
 })

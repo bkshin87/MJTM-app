@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient'
 
 type EventItem = {
   id: number
-  type: string | null      // '1' | '2' | '3' 저장
+  type: string | null        // '1' | '2' | '3' 저장
   title: string
   description: string | null
   event_date: string | null
@@ -49,7 +49,7 @@ const saveEvent = async () => {
     .insert({
       title: titleInput.value.trim(),
       description: contentInput.value.trim(),
-      type: typeInput.value,        // ✅ 1/2/3 저장
+      type: typeInput.value,        // 1/2/3 저장
     })
     .select('*')
     .maybeSingle()
@@ -62,35 +62,33 @@ const saveEvent = async () => {
   }
 
   if (data) {
-  eventItem.value = data as EventItem
+    eventItem.value = data as EventItem
 
-  try {
-    // ✅ 직접 URL 구성 (rest/v1 제거)
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-    await fetch(`${supabaseUrl}/functions/v1/notify-event-created`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
-      },
-      body: JSON.stringify({
-        title: `경조사 : ${titleInput.value.trim()}`,
-        eventId: data.id,
-      }),
-    })
-  } catch (e) {
-    console.error('notify-event-created call error', e)
+      await fetch(`${supabaseUrl}/functions/v1/notify-event-created`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          title: `경조사 : ${titleInput.value.trim()}`,
+          eventId: data.id,
+        }),
+      })
+    } catch (e) {
+      console.error('notify-event-created call error', e)
+    }
+
+    alert('저장되었습니다.')
+    router.push({ name: 'event' })
+  } else {
+    loading.value = false
   }
-
-  alert('저장되었습니다.')
-  router.push({ name: 'event' })
-} else {
-  loading.value = false
-}
-
 }
 
 // 취소
@@ -123,7 +121,6 @@ const cancelWrite = () => {
 
         <!-- 제목과 본문 사이, 왼쪽에 타입 선택 박스 -->
         <section class="type-card">
-          <!--<label class="type-label" for="event-type-select">유형</label>-->
           <select
             id="event-type-select"
             v-model="typeInput"
@@ -210,7 +207,7 @@ const cancelWrite = () => {
   padding: 0;
 }
 
-/* 타입 선택 카드: 제목과 본문 사이, 왼쪽 정렬 */
+/* 타입 선택 카드 */
 .type-card {
   margin-top: 8px;
   display: flex;

@@ -74,6 +74,16 @@ onMounted(async () => {
     }
   })
 
+  // ✅ Service Worker에서 메시지 수신
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      console.log('[APP] received message from SW:', event.data)
+      if (event.data?.type === 'NAVIGATE') {
+        router.push(event.data.path)
+      }
+    })
+  }
+
   checkingSession.value = false
 })
 
@@ -457,13 +467,3 @@ const registerPush = async () => {
 
 .toast {
   position: fixed;
-  right: 16px;
-  bottom: 24px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(17, 24, 39, 0.9);
-  color: #f9fafb;
-  font-size: 13px;
-  z-index: 1000;
-}
-</style>

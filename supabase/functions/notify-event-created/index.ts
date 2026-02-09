@@ -3,6 +3,9 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
+// ❗ web-push는 Node 용이라 Edge(Deno)에서 완전히 호환 안 될 수 있음
+// 필요하면 이 부분을 FCM / OneSignal 등 다른 서비스 호출로 교체하는 것을 권장
+// https://stackoverflow.com/questions/77738808/is-it-possible-to-use-the-web-push-library-for-node-js-in-a-deno-supabase-edge-f [web:12]
 import webpush from 'npm:web-push@3.6.7'
 
 const corsHeaders = {
@@ -12,19 +15,26 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-serve(async (req) => {
+serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { title, eventId } = await req.json()
+    const { title, eventId } = await req.json() as {
+      title?: string
+      eventId?: number
+    }
 
     console.log('notify-event-created called', { title, eventId })
 
-    // web-push VAPID 설정
     const publicVAPID = Deno.env.get('VAPID_PUBLIC_KEY')!
     const privateVAPID = Deno.env.get('VAPID_PRIVATE_KEY')!
+
+    if (!publicVAPID || !privateVAPID) {
+      console.error('VAPID keys are not set')
+      throw new Error('VAPID keys are not configured')
+    }
 
     webpush.setVapidDetails(
       'mailto:admin@mjcivil.com',
@@ -32,12 +42,16 @@ serve(async (req) => {
       privateVAPID,
     )
 
-    // Supabase Service Client 생성
     const supabaseUrl = Deno.env.get('PUBLIC_URL')!
     const serviceKey = Deno.env.get('SERVICE_ROLE_KEY')!
+
+    if (!supabaseUrl || !serviceKey) {
+      console.error('Supabase env vars missing', { supabaseUrl, hasServiceKey: !!serviceKey })
+      throw new Error('Supabase env vars are not configured')
+    }
+
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    // push_subscriptions 테이블에서 모든 구독 조회
     const { data: subscriptions, error: subError } = await supabase
       .from('push_subscriptions')
       .select('*')
@@ -53,42 +67,47 @@ serve(async (req) => {
       console.log('no subscriptions to send')
       return new Response(
         JSON.stringify({ success: true, sent: 0 }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
+        },
       )
     }
 
-    // 각 구독에 Web Push 발송
-    const pushPromises = subscriptions.map(async (sub) => {
+    const payload = JSON.stringify({
+      title: title || '새로운 경조사',
+      body: '경조사가 등록되었습니다.',
+      eventId: eventId ?? null,
+    })
+
+    const pushPromises = subscriptions.map(async (sub: any) => {
       try {
         const subscription = {
-          endpoint: sub.endpoint,
+          endpoint: sub.endpoint as string,
           keys: {
-            p256dh: sub.p256dh,
-            auth: sub.auth,
+            p256dh: sub.p256dh as string,
+            auth: sub.auth as string,
           },
         }
 
-        const payload = JSON.stringify({
-          title: '새로운 경조사',
-          body: '경조사가 등록되었습니다.',
-        })
-
         console.log(`[PUSH] attempting ${sub.user_id}`)
-        console.log(`[PUSH] endpoint type: ${sub.endpoint}`)
+        console.log(`[PUSH] endpoint: ${subscription.endpoint}`)
 
         try {
-          // web-push 라이브러리로 시도
+          // 1차: web-push 사용
           await webpush.sendNotification(subscription, payload)
-          console.log(`[PUSH] ✓ sent to ${sub.user_id}`)
+          console.log(`[PUSH] ✓ sent via webpush to ${sub.user_id}`)
           return { success: true, user_id: sub.user_id }
-        } catch (webpushErr) {
+        } catch (webpushErr: any) {
           console.error(
-            `[PUSH] webpush failed for ${sub.user_id}: ${webpushErr.message}`,
+            `[PUSH] webpush failed for ${sub.user_id}: ${webpushErr?.message ?? webpushErr}`,
           )
 
-          // webpush 실패 시, 단순 HTTP POST로 재시도 (일부 서비스용)
+          // 2차: 단순 HTTP POST 재시도 (일부 서비스용)
           console.log(`[PUSH] retrying with simple POST for ${sub.user_id}`)
-          const response = await fetch(sub.endpoint, {
+          const response = await fetch(subscription.endpoint, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -103,12 +122,14 @@ serve(async (req) => {
             throw new Error(`HTTP ${response.status}`)
           }
         }
-      } catch (err) {
-        console.error(`[PUSH] ✗ failed for ${sub.user_id}: ${err.message}`)
+      } catch (err: any) {
+        console.error(
+          `[PUSH] ✗ failed for ${sub.user_id}: ${err?.message ?? err}`,
+        )
         return {
           success: false,
           user_id: sub.user_id,
-          error: err.message,
+          error: err?.message ?? String(err),
         }
       }
     })
@@ -123,22 +144,29 @@ serve(async (req) => {
         success: true,
         sent: successCount,
         total: results.length,
+        results,
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       },
     )
-  } catch (err) {
-    console.error('notify-event-created error', err.message || err)
+  } catch (err: any) {
+    console.error('notify-event-created error', err?.message ?? err)
 
     return new Response(
       JSON.stringify({
         success: false,
-        error: String(err),
+        error: err?.message ?? String(err),
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       },
     )
   }
