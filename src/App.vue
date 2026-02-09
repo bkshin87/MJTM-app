@@ -74,7 +74,7 @@ onMounted(async () => {
     }
   })
 
-  // ✅ Service Worker에서 메시지 수신
+  // Service Worker에서 메시지 수신 (NAVIGATE 등)
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
       console.log('[APP] received message from SW:', event.data)
@@ -467,3 +467,14 @@ const registerPush = async () => {
 
 .toast {
   position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.9);
+  color: #ffffff;
+  font-size: 12px;
+  z-index: 9999;
+}
+</style>
