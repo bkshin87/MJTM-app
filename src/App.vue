@@ -185,11 +185,8 @@ const registerPush = async () => {
     console.log('[PUSH] sw registered')
 
     // 2) active 상태가 될 때까지 기다렸다가 registration 사용
-    const reg = await navigator.serviceWorker.ready
-    console.log('[PUSH] sw ready', reg)
-
-    // 기존 구독 있으면 재사용
-    let subscription = await reg.pushManager.getSubscription()
+    const reg = (await navigator.serviceWorker.ready) as ServiceWorkerRegistration
+    let subscription = await (reg as ServiceWorkerRegistration).pushManager.getSubscription()
     console.log('[PUSH] existing subscription', subscription)
 
     if (!subscription) {
