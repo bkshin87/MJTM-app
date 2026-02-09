@@ -101,46 +101,51 @@ const showToast = (message: string, duration = 2000) => {
 // 🔐 로그아웃
 const handleLogout = async () => {
   try {
-    // 현재 세션 확인
+    // 1) 현재 세션 확인 (있든 없든 signOut 시도)
     const {
       data: { session },
     } = await supabase.auth.getSession()
+    console.log('[LOGOUT] current session:', session)
 
-    if (!session) {
-      console.warn('[LOGOUT] no session, skipping signOut')
-      showToast('이미 로그아웃된 상태입니다.')
-      await router.push({ name: 'login' })
-      return
-    }
-
-    // local scope 로 로그아웃 (서버 403은 무시하도록 직접 처리)
     const { error } = await supabase.auth.signOut({
-      scope: 'local',
+      scope: 'global', // 확실하게 서버 세션까지 끊기 시도[web:73][web:71]
     })
 
     if (error) {
-      // 최신 버전에서는 403 을 무시하게 패치되었지만, 일부 버전에서는 그대로 던지기도 함[web:71][web:75][web:78]
       console.error('[LOGOUT] signOut error', error)
-      // session_not_found / forbidden 류는 그냥 무시하고 클라이언트 세션만 정리
-      if (error.message && /session/i.test(error.message)) {
-        console.warn('[LOGOUT] ignoring session error and clearing local state')
+
+      // 403 + 세션 관련 에러는 클라이언트 쪽에서 직접 정리
+      if (error.status === 403 || /session/i.test(error.message || '')) {
+        console.warn('[LOGOUT] forcing local cleanup due to 403/session error')
       } else {
         showToast('로그아웃 중 오류가 발생했습니다.')
         return
       }
     }
 
-    // 로컬 상태 정리
+    // 2) 로컬 스토리지/세션 강제 정리 (supabase-js 캐시 포함)[web:73][web:89]
+    try {
+      localStorage.removeItem('supabase.auth.token')
+      localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_URL + '-auth-token')
+    } catch (e) {
+      console.warn('[LOGOUT] localStorage clear error', e)
+    }
+
+    // 3) Vue 상태 정리
     isLoggedIn.value = false
     displayName.value = ''
 
     showToast('로그아웃되었습니다.')
+
+    // 4) 로그인 페이지로 보내고, 새로고침으로 세션 완전히 초기화
     await router.push({ name: 'login' })
+    window.location.reload()
   } catch (e) {
     console.error('[LOGOUT] unexpected error', e)
     showToast('로그아웃 중 오류가 발생했습니다.')
   }
 }
+
 
 // ---- Web Push 등록 유틸 ----
 const urlBase64ToUint8Array = (base64String: string) => {
